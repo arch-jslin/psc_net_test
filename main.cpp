@@ -32,16 +32,15 @@ void start_lua(char ch)
         Lua::call(L, "run", 2); //client
 
     printf("C: Returned back to C.\n");
+    {
+        boost::mutex::scoped_lock l(MQ_MUTEX);
+        MQ.clear();
+    }
     CONNECTED = false;
-    LUA_QUIT = false;
+    LUA_QUIT =  false;
     lua_close(L);
     L = 0;
     printf("C: Lua State really closed.\n");
-}
-
-void stop_lua()
-{
-    Lua::call(L, "stop");
 }
 
 extern "C" {
