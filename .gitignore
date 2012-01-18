@@ -1,2 +1,3 @@
 *.depend
+*.exe
 obj/

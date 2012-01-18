@@ -16,14 +16,12 @@ boost::mutex      MQ_MUTEX;
 
 std::deque<int>   MQ;
 lua_State*        L = 0;
-bool              CONFIRM_L_CLOSE = false;
 bool              CONNECTED = false;
 bool              LUA_QUIT = false;
 int               CH = 0;
 
 void start_lua(char ch)
 {
-    CONFIRM_L_CLOSE = false;
     L = luaL_newstate();
     luaL_openlibs(L);
     Lua::run_script(L, "eventloop.lua");
@@ -34,13 +32,11 @@ void start_lua(char ch)
         Lua::call(L, "run", 2); //client
 
     printf("C: Returned back to C.\n");
-    if( CONFIRM_L_CLOSE ) {
-        CONNECTED = false;
-        LUA_QUIT = false;
-        lua_close(L);
-        L = 0;
-        printf("C: Lua State really closed.\n");
-    }
+    CONNECTED = false;
+    LUA_QUIT = false;
+    lua_close(L);
+    L = 0;
+    printf("C: Lua State really closed.\n");
 }
 
 void stop_lua()
@@ -51,7 +47,6 @@ void stop_lua()
 extern "C" {
     APIEXPORT void signify_close_from_lua() {
         printf("Lua->C: signified to close.\n");
-        CONFIRM_L_CLOSE = true;
     }
 
     APIEXPORT void signify_connected() {
