@@ -5,7 +5,6 @@ local ffi     = require 'ffi'
 local C = ffi.C
 
 ffi.cdef[[
-void signify_close_from_lua();
 void signify_connected();
 int  poll_from_C();
 bool check_quit();
@@ -36,13 +35,15 @@ function run(sc_flag) -- global function so it can be called from C++
         -- process event.data here
         
       elseif event.type == "connect" then
-        print("Lua: Some one connected.")
+        print("Lua: connected:", event.peer)
         if not farside then 
           farside = event.peer 
         end
         C.signify_connected();
         connected = true
         event.peer:send("Greetings.")
+      elseif event.type == "disconnect" then
+        print("Lua: disconnected:", event.peer)
       end
     end
    
@@ -57,6 +58,10 @@ function run(sc_flag) -- global function so it can be called from C++
     end
   end  
   
-  C.signify_close_from_lua()
+  if farside then
+    farside:disconnect_now() -- if you disconnect here by disconnect_now()
+                             -- farside is not guaranteed to get disconnect event.
+  end
+  
   print 'Lua: event loop ended.'
 end

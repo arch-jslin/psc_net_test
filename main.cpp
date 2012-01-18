@@ -44,10 +44,6 @@ void start_lua(char ch)
 }
 
 extern "C" {
-    APIEXPORT void signify_close_from_lua() {
-        printf("Lua->C: signified to close.\n");
-    }
-
     APIEXPORT void signify_connected() {
         printf("Lua->C: farside connected.\n");
         CONNECTED = true;
