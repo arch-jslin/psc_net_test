@@ -12,13 +12,16 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-Os" />
 					<Add option="-O2" />
+					<Add option="-DBOOST_DISABLE_ASSERTS" />
+					<Add option="-DNDEBUG" />
 					<Add directory="c:\lang\luarocks\2.0\include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="boost_thread-mgw45-mt-1_43" />
-					<Add library="C:\lang\luarocks\2.0\lua5.1.lib" />
+					<Add library="boost_thread-mgw46-mt-1_48" />
+					<Add library="lib\lua5.1.lib" />
 					<Add directory="c:\lang\luarocks\2.0" />
 				</Linker>
 			</Target>
