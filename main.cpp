@@ -62,8 +62,13 @@ extern "C" {
     }
 
     APIEXPORT void on_matched() {
-        printf("Lua->C: farside connected.\n");
-        N_STATE = N_CONNECTED_SERV;
+        printf("Lua->C: farside matched.\n");
+        N_STATE = N_MATCHED;
+    }
+
+    APIEXPORT void on_disconnected() {
+        printf("Lua->C: farside disconnected.\n");
+        N_STATE = N_DEFAULT;
     }
 
     APIEXPORT int poll_from_C() {
@@ -117,7 +122,7 @@ int main()
             CH = 0;
         }
 
-        if( N_STATE==N_CONNECTED_SERV ) {
+        if( N_STATE==N_CONNECTED_SERV || N_STATE==N_MATCHED) {
             boost::mutex::scoped_lock l(MQ_MUTEX);
             MQ.push_back(65);
         }
