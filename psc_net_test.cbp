@@ -20,7 +20,11 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+<<<<<<< HEAD
+					<Add library="lib\libboost_thread-mgw46-mt-1_48.dll.a" />
+=======
 					<Add library="boost_thread-mgw46-mt-1_48" />
+>>>>>>> 33fbaabbfebc5fb25967de09828d88396bf98968
 					<Add library="lib\lua5.1.lib" />
 					<Add directory="c:\lang\luarocks\2.0" />
 				</Linker>

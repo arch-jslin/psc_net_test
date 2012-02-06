@@ -16,9 +16,21 @@ boost::mutex      MQ_MUTEX;
 
 std::deque<int>   MQ;
 lua_State*        L = 0;
-bool              CONNECTED = false;
 bool              LUA_QUIT = false;
 int               CH = 0;
+
+enum NetState{
+    N_DEFAULT,
+    N_CONNECTED_SERV,
+    N_MATCHED,
+    N_CONNECTED_DEV
+};
+enum GameState{
+    G_DEFAULT,
+    G_MATCHED
+};
+NetState  N_STATE = N_DEFAULT;
+GameState G_STATE = G_DEFAULT;
 
 void start_lua(char ch)
 {
@@ -36,7 +48,7 @@ void start_lua(char ch)
         boost::mutex::scoped_lock l(MQ_MUTEX);
         MQ.clear();
     }
-    CONNECTED = false;
+    N_STATE = N_DEFAULT;
     LUA_QUIT =  false;
     lua_close(L);
     L = 0;
@@ -44,9 +56,19 @@ void start_lua(char ch)
 }
 
 extern "C" {
-    APIEXPORT void signify_connected() {
+    APIEXPORT void on_connected() {
         printf("Lua->C: farside connected.\n");
-        CONNECTED = true;
+        N_STATE = N_CONNECTED_SERV;
+    }
+
+    APIEXPORT void on_matched() {
+        printf("Lua->C: farside matched.\n");
+        N_STATE = N_MATCHED;
+    }
+
+    APIEXPORT void on_disconnected() {
+        printf("Lua->C: farside disconnected.\n");
+        N_STATE = N_DEFAULT;
     }
 
     APIEXPORT int poll_from_C() {
@@ -70,25 +92,26 @@ void input_loop()
         Sleep(1);
         CH = getc(stdin);
         getc(stdin); //eat Return
+        printf("%c", CH);
     }
 }
 
 int main()
 {
     using std::tr1::bind;
-    boost::thread* t  = 0;
-    boost::thread  t2( input_loop );
+    boost::thread* thLua  = 0;
+    boost::thread  thInput( input_loop );
 
     while ( CH != 3 ) { //ctrl-c
         Sleep(250);
 
         if( CH == 's' || CH == 'c' ) {
             if( !L ) {
-                if( t ) {
-                    delete t;
-                    t = 0;
+                if( thLua ) {
+                    delete thLua;
+                    thLua = 0;
                 }
-                t = new boost::thread( bind(start_lua, CH) );
+                thLua = new boost::thread( bind(start_lua, CH) );
             }
             CH = 0;
         }
@@ -99,7 +122,7 @@ int main()
             CH = 0;
         }
 
-        if( CONNECTED ) {
+        if( N_STATE==N_CONNECTED_SERV || N_STATE==N_MATCHED) {
             boost::mutex::scoped_lock l(MQ_MUTEX);
             MQ.push_back(65);
         }
