@@ -6,12 +6,29 @@ local C = ffi.C
 
 ffi.cdef[[
 void on_connected();
+void on_matched();
+void on_disconnected();
 int  poll_from_C();
 bool check_quit();
 ]]
 
 local SERVER, CLIENT = 1, 2
 
+function TAR(v)
+  print(debug.getinfo(1, "n"), v)
+  C.on_matched()
+end
+local CMD = {}
+CMD.TAR = TAR
+
+-- protocol
+function parse(s)
+  for k, v in string.gmatch(s, "(%w+)=(.+)") do
+    CMD[k](v)
+  end
+end
+
+-- loop
 function run(sc_flag) -- global function so it can be called from C++
   local self_ip = socket.dns.toip( socket.dns.gethostname() )
   print( "Lua: Self IP: "..self_ip )
@@ -32,7 +49,8 @@ function run(sc_flag) -- global function so it can be called from C++
     local event = host:service(1) -- 1 ms
     if event then
       if event.type == "receive" then
-        print("Lua: Got message: ", event.data, event.peer)
+        parse(event.data)
+        print("Lua: Got origin message: ", event.data, event.peer)
 
         -- process event.data here
 
@@ -41,11 +59,12 @@ function run(sc_flag) -- global function so it can be called from C++
         if not farside then
           farside = event.peer
         end
-        C.on_connected();
+        C.on_connected()
         connected = true
         event.peer:send("Greetings.")
       elseif event.type == "disconnect" then
         print("Lua: disconnected:", event.peer)
+        C.on_disconnected()
       end
     end
 
