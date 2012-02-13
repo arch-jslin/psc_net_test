@@ -1,50 +1,83 @@
 local enet    = require 'enet'
 local gettime = require 'socket'.gettime
 local sleep   = require 'socket'.sleep
-
+local addr     = require 'kit'.addr
+local addr_cmp = require 'kit'.addr_cmp
+local msg      = require 'kit'.msg
+local pmsg     = require 'kit'.pmsg
+local ptab     = require 'kit'.ptab
 
 local host = enet.host_create"localhost:12345"
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Lua: Self IP: "..self_ip )
 local ppl = {}
 
--- event handlers
-function onRecv(e)
-  print("Got message: ", e.data, e.peer)
-  e.peer:send("howdy back at ya")
+-- recv functions
+local function IAM(m)
+  pmsg(m)
+  local cli = {}
+  cli.pub = addr(m.src)
+  cli.pri = {ip=m.ip, port=m.port}
+  cli.time = os.time()
+  cli.peer = m.src
+  table.insert(ppl, cli)
 end
-function onConnect(e)
+
+local RECV = {}
+RECV.IAM = IAM
+
+local send = require 'kit'.send
+local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
+
+-- outgoing messages
+local function TAR(from)
+  local m = msg('TAR')
+  m.pub = from.pub
+  m.pri = from.pri
+  return m
+end
+
+
+
+
+-- event handlers
+local function onRecv(e)
+  print("Got message: ", e.data, e.peer)
+  recv(e)
+end
+local function onConnect(e)
   print("Connect:", e.peer)
-  table.insert(ppl, e.peer)
   --host:broadcast("new client connected")
 end
-function onDisconnect(e)
+local function onDisconnect(e)
   print("Disconnect:", e.peer)
-  local tar = tostring(e.peer)
-  table.foreachi(ppl, function(i,v)
-    if tar==tostring(v) then table.remove(ppl, i) end
+  local pub = addr(e.peer)
+  table.foreachi(ppl, function(idx, val)
+    if addr_cmp(val.pub, pub) then table.remove(ppl, idx) end
   end)
 end
-function onMisc(e)
+local function onMisc(e)
   print("Got e", e.type, e.peer)
 end
 
 -- system functions
-function match()
+local function match()
   local sz = table.getn(ppl)
   if sz > 1 then
     local p1 = ppl[1]
     local p2 = ppl[2]
-    p1:send(string.format('%s=%s', 'TAR', tostring(p2)))
-    p2:send(string.format('%s=%s', 'TAR', tostring(p1)))
-    -- table.remove(ppl, 1)
-    -- table.remove(ppl, 1)
-    -- p1:disconnect()
-    -- p2:disconnect()
+
+    send(TAR(p1), p2.peer)
+    send(TAR(p2), p1.peer)
+
+    table.remove(ppl, 1)
+    table.remove(ppl, 1)
+    --p1.peer:disconnect()
+    --p2.peer:disconnect()
   end
 end
 
-function handle(t)
+local function handle(t)
   local e = host:service(t)
 
   if e == nil then return false end
