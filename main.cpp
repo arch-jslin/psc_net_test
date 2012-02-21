@@ -1,6 +1,10 @@
+#if defined(WIN32) || defined(__WIN32__)
 #include <windows.h>
+#endif //WIN32
+
 #include <deque>
 #include <cstdio>
+#include <cstdlib>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/tr1/functional.hpp>
