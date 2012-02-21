@@ -93,7 +93,11 @@ extern "C" {
 void input_loop()
 {
     while( 1 ) {
+#if defined(WIN32) || defined(__WIN32__)
         Sleep(1);
+#else   //NOT WIN32
+        usleep(1000);
+#endif  //WIN32
         CH = getc(stdin);
         getc(stdin); //eat Return
         printf("%c", CH);
@@ -107,8 +111,11 @@ int main()
     boost::thread  thInput( input_loop );
 
     while ( CH != 3 ) { //ctrl-c
+#if defined(WIN32) || defined(__WIN32__)
         Sleep(250);
-
+#else   //NOT WIN32
+        usleep(250000);
+#endif  //WIN32
         if( CH == 's' || CH == 'c' ) {
             if( !L ) {
                 if( thLua ) {
