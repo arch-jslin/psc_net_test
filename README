@@ -1,0 +1,4 @@
+1. pull from the repository master
+2. luajit build_linux.lua
+3. export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
