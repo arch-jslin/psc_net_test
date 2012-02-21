@@ -7,9 +7,9 @@ local msg      = require 'kit'.msg
 local pmsg     = require 'kit'.pmsg
 local ptab     = require 'kit'.ptab
 
-local host = enet.host_create"localhost:12345"
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Lua: Self IP: "..self_ip )
+local host = enet.host_create(self_ip..":12345")
 local ppl = {}
 
 -- recv functions

@@ -108,12 +108,12 @@ function run(sc_flag) -- global function so it can be called from C++
     --host = enet.host_create("localhost:12345")
     net.host = enet.host_create("localhost:"..PORT)
     -- host = enet.host_create("localhost:"..'12346')
-    net.host_matcher = net.host:connect("localhost:12345")
+    net.host_matcher = net.host:connect("173.255.254.41:12345")
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.host = enet.host_create("localhost:"..PORT)
     -- host = enet.host_create("localhost:"..'12347')
-    net.host_matcher = net.host:connect("localhost:12345")
+    net.host_matcher = net.host:connect("173.255.254.41:12345")
   end
 
   -- parse unpack hnd
