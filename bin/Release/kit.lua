@@ -29,7 +29,7 @@ local function table_print (tt, indent, done)
   end
 end
 
-function _strtab ( tbl )
+local function _strtab ( tbl )
     if  "nil"       == type( tbl ) then
         return tostring(nil)
     elseif  "table" == type( tbl ) then
@@ -65,11 +65,15 @@ EXPORT.addr = function (peer)
   return {ip=i, port=p}
 end
 
+EXPORT.addr_str = function(addr)
+  return (''..addr.ip)..':'..addr.port
+end
+
 EXPORT.addr_cmp = function (a,b)
   return a.ip==b.ip and a.port==b.port
 end
 
-function curry(f)
+local function curry(f)
   return function (x)
     return function (y) return f(x,y) end
   end
@@ -91,5 +95,15 @@ end
 EXPORT.send = function (obj, peer)
   peer:send(mp.pack(obj))
 end
+
+local function _dump(header, text)
+  print(header..': '.._strtab(text))
+end
+
+EXPORT.getDump = function(h)
+  return curry(_dump)(h)
+end
+
+
 
 return EXPORT

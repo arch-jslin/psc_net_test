@@ -38,8 +38,6 @@ local function TAR(from)
 end
 
 
-
-
 -- event handlers
 local function onRecv(e)
   print("Got message: ", e.data, e.peer)
