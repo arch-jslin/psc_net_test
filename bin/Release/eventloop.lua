@@ -3,13 +3,14 @@ local gettime = require 'socket'.gettime
 local sleep   = require 'socket'.sleep
 local ffi     = require 'ffi'
 local C       = ffi.C
-local addr     = require 'kit'.addr
-local addr_cmp = require 'kit'.addr_cmp
-local addr_str = require 'kit'.addr_str
-local msg      = require 'kit'.msg
-local pmsg     = require 'kit'.pmsg
-local ptab     = require 'kit'.ptab
-local dump     = require 'kit'.getDump('Lua')
+local kit      = require 'kit'
+local addr     = kit.addr
+local addr_cmp = kit.addr_cmp
+local addr_str = kit.addr_str
+local msg      = kit.msg
+local pmsg     = kit.pmsg
+local ptab     = kit.ptab
+local dump     = kit.getDump('Lua')
 
 ffi.cdef[[
 void on_connected();
@@ -19,12 +20,9 @@ int  poll_from_C();
 bool check_quit();
 ]]
 
-local SERVER, CLIENT = 1, 2
 local PORT_A = 2501
 local PORT_B = 2502
 local PORT = 2501
--- local PORT_AS_SERVER = 2502
--- local PORT_AS_CLIENT = 2503
 local IP_LOCAL = socket.dns.toip( socket.dns.gethostname() )
 dump( "Lua: Local IP: "..IP_LOCAL )
 local OPPONENT = {}
@@ -34,9 +32,10 @@ local net  = {}
 net.host_matcher = nil
 net.client = nil  -- enet.host_create:connect
 net.host   = nil  -- pose as a client or a server
-net.state  = nil  -- 1:try pub 2:try pri 3:
+net.state  = nil
 net.type   = nil  -- 1:server 2:client
 net.tar    = nil  -- target information
+net.tm     = 0
 net.init = function(tar)
   net.reset()
   net.tar = tar
@@ -52,14 +51,34 @@ net.runAsClient = function()
     dump('Needs target address')
     return
   end
-  net.client = net.host:connect(addr_str(net.tar.pub))
+
+  net.client = net.host:connect(addr_str(net.tar.pri))
   net.type = 1
   dump('Connect to '..tostring(net.client))
 end
 net.isReady = function()
 end
 net.tick = function()
-  net.isReady()
+  local e = net.host:service(1) -- 1 ms
+
+  if e then
+    if e.type == "receive" then
+      print("Lua: Got origin message: ", e.data, e.peer)
+    elseif e.type == "connect" then
+      e.peer:send("Greetings.")
+      dump('connected: '..e.peer)
+    elseif e.type == "disconnect" then
+      print("Lua: disconnected:", e.peer)
+    else
+      dump(e)
+    end
+  end
+
+
+  if (os.time() - net.tm > 0) then
+    print(os.time())
+    net.tm = os.time()
+  end
 end
 
 -- recv functions
@@ -78,7 +97,6 @@ end
 local RECV = {}
 RECV.TAR = TAR
 
-local kit = require 'kit'
 local send = kit.send
 local recv = kit.getRecv(function (m)
   if RECV[m.T]==nil then
@@ -97,22 +115,29 @@ local function IAM()
   return m
 end
 
--- loop
+
+-- entry
 function run(sc_flag) -- global function so it can be called from C++
 
   --local host = nil
   local connected = false
 
+  --IP_LOCAL = 'localhost'
   if sc_flag == SERVER then
     PORT = PORT_A
-    --host = enet.host_create("localhost:12345")
-    net.host = enet.host_create("localhost:"..PORT)
-    -- host = enet.host_create("localhost:"..'12346')
-    net.host_matcher = net.host:connect("173.255.254.41:12345")
+    net.host = enet.host_create(IP_LOCAL..":"..PORT)
+    -- net.host_matcher = net.host:connect("localhost:12345")
+
+    local function foo()
+      net.host_matcher = net.host:connect('173.255.254.411:12345')
+    end
+    local ret = pcall(foo)
+    --net.host_matcher = net.host:connect("173.255.254.411:12345")
+
   elseif sc_flag == CLIENT then
     PORT = PORT_B
-    net.host = enet.host_create("localhost:"..PORT)
-    -- host = enet.host_create("localhost:"..'12347')
+    net.host = enet.host_create(IP_LOCAL..":"..PORT)
+    -- net.host_matcher = net.host:connect("localhost:12345")
     net.host_matcher = net.host:connect("173.255.254.41:12345")
   end
 

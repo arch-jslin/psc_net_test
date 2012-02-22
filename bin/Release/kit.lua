@@ -30,11 +30,11 @@ local function table_print (tt, indent, done)
 end
 
 local function _strtab ( tbl )
-    if  "nil"       == type( tbl ) then
+    if "nil" == type( tbl ) then
         return tostring(nil)
-    elseif  "table" == type( tbl ) then
+    elseif "table" == type( tbl ) then
         return table_print(tbl)
-    elseif  "string" == type( tbl ) then
+    elseif "string" == type( tbl ) then
         return tbl
     else
         return tostring(tbl)
