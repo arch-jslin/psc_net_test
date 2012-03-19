@@ -27,6 +27,11 @@ local function _step4() -- connect to public ip by opening new port
 -- port沒被改變但不能連 => 開新 port (port 被限制給 matcher server )
 end
 
+EXPORT.reset = function (s)
+  if s == nil then s = 1 end
+  step = s
+  if s < 3 then inc = 1 end
+end
 
 EXPORT.connect = function (n, t, s)
   -- init target information
@@ -38,18 +43,16 @@ EXPORT.connect = function (n, t, s)
   proc[3] = _step3
   proc[4] = _step4
  
-  step = s
+  EXPORT.reset(s)
   EXPORT.connect_next()
 end
 
 EXPORT.connect_next = function ()
 
   if step == nil then
-    step = 1
-    inc = 1
+    EXPORT.reset(1)
   elseif step > table.getn(proc) then
     dump('Out of methods')
-    inc = 1
     return false
   end
 

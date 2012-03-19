@@ -62,7 +62,7 @@ end
 -- address data
 EXPORT.addr = function (peer)
   local i,p = string.gmatch(tostring(peer), "(.+):(%w+)")()
-  return {ip=i, port=p}
+  -- return {ip=i, port=p}
 end
 
 EXPORT.addr_str = function(addr)
@@ -80,7 +80,7 @@ local function curry(f)
 end
 
 local function _parse(hnd, e)
-  print('inside _parse peer=', e.peer)
+  -- print('inside _parse peer=', e.peer)
   local off, m = mp.unpack(e.data)
   if (type(m)=='table') then
     m.src = e.peer
