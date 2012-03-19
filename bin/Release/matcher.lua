@@ -12,6 +12,7 @@ print( "Lua: Self IP: "..self_ip )
 local host = enet.host_create('localhost'..":12345")
 local ppl = {}
 
+
 -- recv functions
 local function IAM(m)
   pmsg(m)
@@ -30,10 +31,11 @@ local send = require 'kit'.send
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
 -- outgoing messages
-local function TAR(from)
+local function TAR(from, code)
   local m = msg('TAR')
   m.pub = from.pub
   m.pri = from.pri
+  m.code = code
   return m
 end
 
@@ -65,8 +67,8 @@ local function match()
     local p1 = ppl[1]
     local p2 = ppl[2]
 
-    send(TAR(p1), p2.peer)
-    send(TAR(p2), p1.peer)
+    send(TAR(p1, 0), p2.peer)
+    send(TAR(p2, 1), p1.peer)
 
     table.remove(ppl, 1)
     table.remove(ppl, 1)
