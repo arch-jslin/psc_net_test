@@ -34,24 +34,8 @@ local CLIENT=2
 
 
 --[[
-
-port沒被改變但不能連 => 開新 port (port 被限制給 matcher server )
-port被改變也不能連 => try public ip, private ip
-
-step 1 連 private ip
-step 2 連 public ip
-step 3 連 public ip, port 遞增 1~5
-step 4 連 public ip, 開新 port
-
-連到就停 3 秒
-
-if server -> be server
-if client -> be client
-if both   -> large code is server
-
 server: conn
 client: host
-
 ]]
 
 -- connection management
@@ -64,7 +48,7 @@ net.host   = nil  -- pose as a client or a server
 0: disconnected
 1: start connection, wait for greetings
 2: connected
-9: giveup
+9: give up
 ]]
 net.state  = 0
 
@@ -105,7 +89,7 @@ net.waitGreeting = function()
   if net.greeting >= 2 then
     dump('wait too long... disconnect it')
     net.reset()
-    local ret = ns.connect_n()
+    local ret = ns.connect_next()
     if ret == false then
       net.state = 9
     end
@@ -145,6 +129,15 @@ net.tick = function()
     end
   end
 end
+
+net.connTarget = function()
+  if net.state > 0 then
+    net.tick()
+    return true
+  end
+  return false
+end
+
 
 -- recv functions
 local function TAR(m)
@@ -207,10 +200,10 @@ function run(sc_flag) -- global function so it can be called from C++
     net.host_matcher = net.host:connect("173.255.254.41:12345")
   end
 
-  -- parse unpack hnd
-  -- hnd pack send
+  -- parse, unpack, hnd
+  -- hnd, pack, send
   while not C.check_quit() do
-    repeat -- wrapper for continue
+  repeat -- wrapper for continue
 
     -- Stage 2: connect to target
     if net.state > 0 then
@@ -218,12 +211,15 @@ function run(sc_flag) -- global function so it can be called from C++
       break
     end
 
+    -- local ret = net.connTarget()
+    -- if ret == false then
+    --   ret = net.connMatcher()
+    -- end
 
     -- Stage 1: connect to matcher
     local e = net.host:service(1) -- 1 ms
     if e then
       if e.type == "receive" then
-        --print("Lua: Got origin message: ", e.data, e.peer)
         recv(e)
       elseif e.type == "connect" then
         print("Lua: connected:", e.peer)
@@ -232,7 +228,6 @@ function run(sc_flag) -- global function so it can be called from C++
         end
         C.on_connected()
         connected = true
-        --e.peer:send("Greetings.")
         send(IAM(), e.peer)
       elseif e.type == "disconnect" then
         print("Lua: disconnected:", e.peer)
@@ -254,8 +249,9 @@ function run(sc_flag) -- global function so it can be called from C++
   end          -- while
 
   if net.host_matcher then
-    net.host_matcher:disconnect_now() -- if you disconnect here by disconnect_now()
-                             -- net.host_matcher is not guaranteed to get disconnect e.
+    net.host_matcher:disconnect_now() 
+    -- if you disconnect here by disconnect_now()
+    -- net.host_matcher is not guaranteed to get disconnect e.
   end
 
   print 'Lua: event loop ended.'

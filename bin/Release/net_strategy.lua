@@ -10,12 +10,12 @@ local proc = {}
 
 local function _step1() -- connect to private ip
   dump('connect to '..net.tarPriAddr())
-  --net.client = net.host:connect(net.tarPriAddr())
+  net.client = net.host:connect(net.tarPriAddr())
 end
 
 local function _step2() -- connect to public ip
   dump('connect to '..net.tarPubAddr())
-  --net.client = net.host:connect(net.tarPubAddr())
+  net.client = net.host:connect(net.tarPubAddr())
 end
 
 local function _step3() -- connect to public ip by increasing port number
@@ -24,6 +24,7 @@ local function _step3() -- connect to public ip by increasing port number
 end
 
 local function _step4() -- connect to public ip by opening new port
+-- port沒被改變但不能連 => 開新 port (port 被限制給 matcher server )
 end
 
 
@@ -38,10 +39,10 @@ EXPORT.connect = function (n, t, s)
   proc[4] = _step4
  
   step = s
-  EXPORT.connect_n()
+  EXPORT.connect_next()
 end
 
-EXPORT.connect_n = function ()
+EXPORT.connect_next = function ()
 
   if step == nil then
     step = 1
