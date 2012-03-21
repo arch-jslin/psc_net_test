@@ -1,6 +1,7 @@
 local enet    = require 'enet'
-local gettime = require 'socket'.gettime
-local sleep   = require 'socket'.sleep
+local socket = require 'socket'
+-- local gettime = require 'socket'.gettime
+-- local sleep   = require 'socket'.sleep
 local ffi     = require 'ffi'
 local C       = ffi.C
 local kit      = require 'kit'
@@ -9,10 +10,8 @@ local addr_cmp = kit.addr_cmp
 local addr_str = kit.addr_str
 local msg      = kit.msg
 local pmsg     = kit.pmsg
-local ptab     = kit.ptab
 local dump     = kit.getDump('Lua')
 local ns       = require 'net_strategy'
-
 
 ffi.cdef[[
 void on_connected();
@@ -27,8 +26,6 @@ local PORT_B = 2502
 local PORT = 2501
 local IP_LOCAL = socket.dns.toip( socket.dns.gethostname() )
 dump( "Lua: Local IP: "..IP_LOCAL )
-local OPPONENT = {}
-
 local SERVER=1
 local CLIENT=2
 
@@ -36,10 +33,10 @@ local net  = {}
 
 -- recv functions
 local function TAR(m)
-  dump(m)
+  pmsg(m)
   C.on_matched()  
-  net.host_matcher:disconnect_now() -- say goodbye to matcher
-  ns.connect(net, m)
+  net.reset()     -- say goodbye to matcher
+  net.farside(m)
 end
 
 local RECV = {}
@@ -64,9 +61,9 @@ local function IAM()
 end
 
 -- connection management
-net.host_matcher = nil
-net.client = nil  -- enet.host_create:connect
-net.host   = nil  -- pose as a client or a server
+net.conn_matcher = nil
+net.conn_farside = nil
+net.host    = nil
 net.working = false
 
 --[[ state number
@@ -76,38 +73,77 @@ net.working = false
 9: give up
 ]]
 net.state  = 0
-
-net.type   = nil  -- 1:server 2:client
-net.tar    = nil  -- target information
+net.tar    = nil  -- farside information
 net.tm     = 0
 net.greeting = 0
 
-net.tarPriAddr = function()
+function net:tarPriAddr(i)
+  if i ~= nil then
+    return addr_str(net.tar.prialt)
+  end
   return addr_str(net.tar.pri)
 end
 
-net.tarPubAddr = function(i)
+function net:tarPubAddr(i)
   if i ~= nil and i > 0 and i < 6 then
     return addr_str(net.tar.pubs[i])
+  elseif i ~= nil and i > 100 then
+    return addr_str(net.tar.pubalt)
   end
   return addr_str(net.tar.pub)
 end
 
-net.init = function(tar)
+net.init = function(ip, port)
+  dump('create host '..ip..':'..port)
   net.reset()
+  net.host = enet.host_create(ip..":"..port)
+end
+
+net.matcher = function(ip, port)
+  local function foo()
+    --net.conn_matcher = net.host:connect(ip..":"..port)
+    net.conn_matcher = net.host:connect("localhost:12345")
+  end
+
+  local ok, err = pcall(foo)
+
+  if not ok then dump(err) end
+  
+  return ok
+end
+
+net.farside = function(info)
+  if info then
+    return ns.connect(net, info)
+  end
+  return ns.connect_next()
+end
+
+net.setup = function(tar)
+  net.reset()
+  
+  net.iam = {}
+  net.iam.pri = {ip=IP_LOCAL, port=PORT}  
+  net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}  
+
   net.tar = tar
-  net.tar.pubs = {} -- for ns method 3
+
+  -- for ns method 3
+  net.tar.pubs = {} 
   for i = 1, 5, 1 do
     net.tar.pubs[i] = {ip=net.tar.pub.ip, port=net.tar.pub.port+i}
   end  
+
+  -- for ns method 4
+  net.tar.pubalt = {ip=net.tar.pub.ip, port=net.tar.pub.port+1000} 
+  net.tar.prialt = {ip=net.tar.pri.ip, port=net.tar.pri.port+1000} 
+
 end
 
 net.reset = function()
-  if net.client then net.client:disconnect() end
-  if net.host_matcher then net.host_matcher:disconnect() end
+  if net.conn_farside then net.conn_farside:disconnect() end
+  if net.conn_matcher then net.conn_matcher:disconnect() end
   net.state  = 0
-  net.type   = nil
-  net.client = nil
   net.greeting = 0
   net.working = false
 end
@@ -119,9 +155,9 @@ net.waitGreeting = function()
   if net.greeting >= 2 then
     dump('wait too long... disconnect it')
     net.reset()
-    local ret = ns.connect_next()
-    if ret == false then
+    if not net.farside() then
       net.state = 9
+      dump('give up')
     end
   end
 end
@@ -147,7 +183,7 @@ net.tick = function()
       e.peer:send("Greetings")
       -- dump('connected: '..tostring(e.peer))
     elseif e.type == "disconnect" then
-      print("Lua: disconnected:", e.peer)
+      dump("disconnected:"..tostring(e.peer))
       net.working = false
     else
       dump(e)
@@ -156,15 +192,19 @@ net.tick = function()
 
 
   if (os.time() - net.tm > 0) then
-    dump(os.time())
     net.tm = os.time()
+
+    if net.tm % 10 == 0 then
+      dump('tm='..net.tm)
+    end
+
     if net.state==1 then
       net.waitGreeting()
     end
   end
 end
 
-net.connectTarget = function()
+net.proc_farside = function()
   if net.state < 1 then
     return false
   end
@@ -172,7 +212,7 @@ net.connectTarget = function()
   return true
 end
 
-net.connectMatcher= function()
+net.proc_matcher= function()
   if net.state > 0 then
     return false
   end
@@ -183,8 +223,8 @@ net.connectMatcher= function()
       recv(e)
     elseif e.type == "connect" then
       print("Lua: connected:", e.peer)
-      if not net.host_matcher then
-        net.host_matcher = e.peer
+      if not net.conn_matcher then
+        net.conn_matcher = e.peer
       end
       net.working = true
       C.on_connected()
@@ -200,41 +240,26 @@ net.connectMatcher= function()
 end
 
 
+-- Entry point
+-- global function so it can be called from C++
+function run(sc_flag) 
+  local ok = true
 
-
-
--- entry
-function run(sc_flag) -- global function so it can be called from C++
-
-  --local host = nil
-  local connected = false
-
-  --IP_LOCAL = 'localhost'
+  IP_LOCAL = 'localhost'
   if sc_flag == SERVER then
     PORT = PORT_A
-    net.host = enet.host_create(IP_LOCAL..":"..PORT)
-    -- net.host_matcher = net.host:connect("localhost:12345")
-    
-    local function foo()
-      net.host_matcher = net.host:connect('173.255.254.41:12345')
-    end
-
-    local ok, err = pcall(foo)
-    if ok==false then
-      dump(err)
-      return false
-    end
-
+    net.init(IP_LOCAL, PORT)
+    ok = net.matcher('173.255.254.41', 12345)
   elseif sc_flag == CLIENT then
     PORT = PORT_B
-    net.host = enet.host_create(IP_LOCAL..":"..PORT)
-    -- net.host_matcher = net.host:connect("localhost:12345")
-    net.host_matcher = net.host:connect("173.255.254.41:12345")
+    net.init(IP_LOCAL, PORT)
+    ok = net.matcher('173.255.254.41', 12345)
   end
 
-  -- parse, unpack, hnd
-  -- hnd, pack, send
+  if not ok then return false end
+
   while not C.check_quit() do
+
     -- commands from app
     if net.working then
       local RECV_C = C.poll_from_C()
@@ -244,8 +269,8 @@ function run(sc_flag) -- global function so it can be called from C++
     end
 
     -- networking
-    if net.connectTarget() then
-    elseif net.connectMatcher() then
+    if net.proc_farside() then
+    elseif net.proc_matcher() then
     end
 
   end

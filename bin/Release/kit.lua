@@ -1,5 +1,5 @@
 
-local mp      = require "luajit-msgpack-pure"
+local mp     = require "luajit-msgpack-pure"
 
 local EXPORT = {}
 
@@ -70,6 +70,7 @@ EXPORT.addr_str = function(addr)
 end
 
 EXPORT.addr_cmp = function (a,b)
+  if a ==nil or b==nil then return false end
   return a.ip==b.ip and a.port==b.port
 end
 

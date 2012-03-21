@@ -1,11 +1,13 @@
-local enet    = require 'enet'
-local gettime = require 'socket'.gettime
-local sleep   = require 'socket'.sleep
-local addr     = require 'kit'.addr
-local addr_cmp = require 'kit'.addr_cmp
-local msg      = require 'kit'.msg
-local pmsg     = require 'kit'.pmsg
-local ptab     = require 'kit'.ptab
+ local enet    = require 'enet'
+local gettime  = require 'socket'.gettime
+local sleep    = require 'socket'.sleep
+local kit      = require 'kit'
+local addr     = kit.addr
+local addr_cmp = kit.addr_cmp
+local addr_str = kit.addr_str
+local msg      = kit.msg
+local pmsg     = kit.pmsg
+local dump     = kit.getDump('Matcher')
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Lua: Self IP: "..self_ip )
@@ -31,11 +33,11 @@ local send = require 'kit'.send
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
 -- outgoing messages
-local function TAR(from, code)
+local function TAR(from, c)
   local m = msg('TAR')
   m.pub = from.pub
   m.pri = from.pri
-  m.code = code
+  m.ref = {code=c}
   return m
 end
 
