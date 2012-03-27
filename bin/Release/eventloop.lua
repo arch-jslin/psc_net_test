@@ -70,7 +70,7 @@ end
 
 net.init = function(ip, port)
 
-  ip = 'localhost'
+  --ip = 'localhost'
 
   dump('create host '..ip..':'..port)
   net.reset()
@@ -80,8 +80,8 @@ end
 net.matcher = function(ip, port)
   local function foo()
     dump('connect to '..ip..":"..port)
-    --net.conn_matcher = net.host:connect(ip..":"..port)
-    net.conn_matcher = net.host:connect("localhost:12345")
+    net.conn_matcher = net.host:connect(ip..":"..port)
+    --net.conn_matcher = net.host:connect("localhost:12345")
   end
 
   local ok, err = pcall(foo)
