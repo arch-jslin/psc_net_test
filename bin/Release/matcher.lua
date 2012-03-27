@@ -1,4 +1,4 @@
- local enet    = require 'enet'
+local enet     = require 'enet'
 local gettime  = require 'socket'.gettime
 local sleep    = require 'socket'.sleep
 local kit      = require 'kit'
@@ -11,7 +11,8 @@ local dump     = kit.getDump('Matcher')
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Lua: Self IP: "..self_ip )
-local host = enet.host_create('localhost'..":12345")
+--local host = enet.host_create('localhost'..":12345")
+local host = enet.host_create(self_ip..":12345")
 local ppl = {}
 
 
@@ -33,11 +34,11 @@ local send = require 'kit'.send
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
 -- outgoing messages
-local function TAR(from, c)
+local function TAR(from, code)
   local m = msg('TAR')
   m.pub = from.pub
   m.pri = from.pri
-  m.ref = {code=c}
+  m.code = code
   return m
 end
 

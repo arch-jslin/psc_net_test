@@ -12,6 +12,8 @@ local msg      = kit.msg
 local pmsg     = kit.pmsg
 local dump     = kit.getDump('Lua')
 local ns       = require 'net_strategy'
+local prep     = require 'protocol_preproc'
+local play     = require 'protocol_gameplay'
 
 ffi.cdef[[
 void on_connected();
@@ -31,34 +33,6 @@ local CLIENT=2
 
 local net  = {}
 
--- recv functions
-local function TAR(m)
-  pmsg(m)
-  C.on_matched()  
-  net.reset()     -- say goodbye to matcher
-  net.farside(m)
-end
-
-local RECV = {}
-RECV.TAR = TAR
-
-local send = kit.send
-local recv = kit.getRecv(function (m)
-  if RECV[m.T]==nil then
-    dump('Incoming msg is not supported: '..m.T)
-    return
-  end
-
-  RECV[m.T](m)
-end)
-
--- outgoing messages
-local function IAM()
-  local m = msg('IAM')
-  m.ip    = IP_LOCAL
-  m.port  = PORT
-  return m
-end
 
 -- connection management
 net.conn_matcher = nil
@@ -70,6 +44,7 @@ net.working = false
 0: disconnected
 1: start connection, wait for greetings
 2: connected
+3: ready to play
 9: give up
 ]]
 net.state  = 0
@@ -94,6 +69,9 @@ function net:tarPubAddr(i)
 end
 
 net.init = function(ip, port)
+
+  ip = 'localhost'
+
   dump('create host '..ip..':'..port)
   net.reset()
   net.host = enet.host_create(ip..":"..port)
@@ -101,6 +79,7 @@ end
 
 net.matcher = function(ip, port)
   local function foo()
+    dump('connect to '..ip..":"..port)
     --net.conn_matcher = net.host:connect(ip..":"..port)
     net.conn_matcher = net.host:connect("localhost:12345")
   end
@@ -162,34 +141,28 @@ net.waitGreeting = function()
   end
 end
 
-net.gotGreeting = function(e)
+net.gotGreeting = function(src)
   net.state = 2
   net.working = true
-  dump('got greetings. state=2 from '..tostring(e.peer))
+  dump('got greetings. state=2 from '..tostring(src))
+end
+net.readyToPlay = function()
+  net.state = 3
+  if net.tar.code == 0 then
+    net.asServer = true
+    net.asClient = false
+    dump('Pose as '..'Server')
+  else
+    net.asServer = false
+    net.asClient = true
+    dump('Pose as '..'Client')
+  end
 end
 
-net.tick = function()
-  local e = net.host:service(1) -- 1 ms
-
-  if e then
-    if e.type == "receive" then
-      -- print("Lua: Got origin message: ", e.data, e.peer)
-      if e.data=='Greetings' then
-        net.gotGreeting(e)
-      else
-        recv(e)
-      end
-    elseif e.type == "connect" then
-      e.peer:send("Greetings")
-      -- dump('connected: '..tostring(e.peer))
-    elseif e.type == "disconnect" then
-      dump("disconnected:"..tostring(e.peer))
-      net.working = false
-    else
-      dump(e)
-    end
+net.tick = function(cc)
+  if cc ~= 0 and cc ~= nil then
+    -- dump(cc)
   end
-
 
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
@@ -204,39 +177,53 @@ net.tick = function()
   end
 end
 
-net.proc_farside = function()
-  if net.state < 1 then
-    return false
+net.proc_farside = function(e)
+  if e.type == "receive" then
+
+    if e.data=='Greetings' and net.state < 2 then
+      net.gotGreeting(e)
+      net.readyToPlay()         -- state=3
+    elseif e.data=='test' and net.state == 2 then
+      print("Lua: Got origin message: ", e.data, e.peer)
+    elseif net.state < 2 then
+      prep.recv(e)
+    elseif net.state == 3 then
+      play.recv(e)
+    end
+
+  elseif e.type == "connect" and net.state < 2 then
+    --e.peer:send("Greetings")
+    prep.greeting(e.peer)
+  elseif e.type == "disconnect" then
+    dump("disconnected:"..tostring(e.peer))
+    net.working = false
+  else
+    dump(e)
   end
-  net.tick()
-  return true
 end
 
-net.proc_matcher= function()
-  if net.state > 0 then
-    return false
-  end
+net.proc_matcher= function(e)
+  if e.type == "receive" then
+    prep.recv(e)
+  elseif e.type == "connect" then
+    print("Lua: connected:", e.peer)
 
-  local e = net.host:service(1) -- 1 ms
-  if e then
-    if e.type == "receive" then
-      recv(e)
-    elseif e.type == "connect" then
-      print("Lua: connected:", e.peer)
-      if not net.conn_matcher then
-        net.conn_matcher = e.peer
-      end
-      net.working = true
-      C.on_connected()
-      send(IAM(), e.peer)
-    elseif e.type == "disconnect" then
-      print("Lua: disconnected:", e.peer)
-      net.working = false
-      C.on_disconnected()
+    if not net.conn_matcher then
+      net.conn_matcher = e.peer
     end
-  end
 
-  return true
+    net.working = true
+    C.on_connected()
+
+    prep.send_iam(IP_LOCAL, PORT, e.peer)
+
+  elseif e.type == "disconnect" then
+    print("Lua: disconnected:", e.peer)
+    net.working = false
+    C.on_disconnected()
+  else
+    dump(e)
+  end
 end
 
 
@@ -245,32 +232,31 @@ end
 function run(sc_flag) 
   local ok = true
 
-  IP_LOCAL = 'localhost'
   if sc_flag == SERVER then
     PORT = PORT_A
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher('173.255.254.41', 12345)
+    ok = net.matcher("173.255.254.41", "12345")
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher('173.255.254.41', 12345)
+    ok = net.matcher("173.255.254.41", "12345")
   end
 
   if not ok then return false end
 
+  prep.setup(net)
+  play.setup(net)
+
   while not C.check_quit() do
 
-    -- commands from app
-    if net.working then
-      local RECV_C = C.poll_from_C()
-      if RECV_C ~= 0 then
-        --dump(RECV_C)
-      end
-    end
+    local c = C.poll_from_C()      -- commands from c
+    local e = net.host:service(1)  -- network event
 
-    -- networking
-    if net.proc_farside() then
-    elseif net.proc_matcher() then
+    if net.state < 1 then
+      if e then net.proc_matcher(e) end
+    elseif net.state >= 1 then
+      if e then net.proc_farside(e) end
+      net.tick(c)
     end
 
   end

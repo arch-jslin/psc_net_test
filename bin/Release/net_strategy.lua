@@ -10,17 +10,17 @@ local proc = {}
 
 local function _step1() -- connect to private ip
   dump('connect to '..net:tarPriAddr())
-  -- net.conn_farside = net.host:connect(net:tarPriAddr())
+  net.conn_farside = net.host:connect(net:tarPriAddr())
 end
 
 local function _step2() -- connect to public ip
   dump('connect to '..net:tarPubAddr())
-  --net.conn_farside = net.host:connect(net:tarPubAddr())
+  net.conn_farside = net.host:connect(net:tarPubAddr())
 end
 
 local function _step3() -- connect to public ip by increasing port number
   dump('connect to '..net:tarPubAddr(inc))
-  --net.conn_farside = net.host:connect(net:tarPubAddr(inc))
+  net.conn_farside = net.host:connect(net:tarPubAddr(inc))
 end
 
 local function _step4() -- connect to farside by opening new port

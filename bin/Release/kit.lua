@@ -62,7 +62,7 @@ end
 -- address data
 EXPORT.addr = function (peer)
   local i,p = string.gmatch(tostring(peer), "(.+):(%w+)")()
-  -- return {ip=i, port=p}
+  return {ip=i, port=p}
 end
 
 EXPORT.addr_str = function(addr)
