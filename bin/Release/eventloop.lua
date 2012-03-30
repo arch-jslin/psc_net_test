@@ -144,6 +144,7 @@ end
 net.gotGreeting = function(src)
   net.state = 2
   net.working = true
+  net.conn_farside = src
   dump('got greetings. state=2 from '..tostring(src))
 end
 net.readyToPlay = function()
@@ -164,6 +165,10 @@ net.tick = function(cc)
     -- dump(cc)
   end
 
+  if net.state==3 and net.asServer == true then
+    play.poke(net.conn_farside)
+  end
+
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
@@ -181,8 +186,7 @@ net.proc_farside = function(e)
   if e.type == "receive" then
 
     if e.data=='Greetings' and net.state < 2 then
-      net.gotGreeting(e)
-      net.readyToPlay()         -- state=3
+      --net.gotGreeting(e)
     elseif e.data=='test' and net.state == 2 then
       print("Lua: Got origin message: ", e.data, e.peer)
     elseif net.state < 2 then
@@ -250,7 +254,7 @@ function run(sc_flag)
   while not C.check_quit() do
 
     local c = C.poll_from_C()      -- commands from c
-    local e = net.host:service(1)  -- network event
+    local e = net.host:service(500)  -- network event
 
     if net.state < 1 then
       if e then net.proc_matcher(e) end
