@@ -24,7 +24,7 @@ end
 RECV.GREETING = function(m)
   pmsg(m)
   net.gotGreeting(m.src)
-  net.readyToPlay()         -- state=3
+  --net.readyToPlay()         -- state=3
 end
 
 local recv = kit.getRecv(function (m)

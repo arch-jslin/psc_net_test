@@ -131,7 +131,7 @@ net.waitGreeting = function()
     dump('wait for greetings...'..tostring(net.greeting))
     net.greeting = net.greeting + 1
 
-  if net.greeting >= 2 then
+  if net.greeting >= 5 then
     dump('wait too long... disconnect it')
     net.reset()
     if not net.farside() then
@@ -147,6 +147,7 @@ net.gotGreeting = function(src)
   net.conn_farside = src
   dump('got greetings. state=2 from '..tostring(src))
 end
+
 net.readyToPlay = function()
   net.state = 3
   if net.tar.code == 0 then
@@ -162,11 +163,10 @@ end
 
 net.tick = function(cc)
   if cc ~= 0 and cc ~= nil then
-    -- dump(cc)
-  end
-
-  if net.state==3 and net.asServer == true then
-    play.poke(net.conn_farside)
+    if net.working then 
+      kit.send(msg('cmd', cc), net.conn_farside)
+      print("RTT: "..net.conn_farside:get_rtt())
+    end
   end
 
   if (os.time() - net.tm > 0) then
@@ -185,18 +185,14 @@ end
 net.proc_farside = function(e)
   if e.type == "receive" then
 
-    if e.data=='Greetings' and net.state < 2 then
-      --net.gotGreeting(e)
-    elseif e.data=='test' and net.state == 2 then
-      print("Lua: Got origin message: ", e.data, e.peer)
-    elseif net.state < 2 then
+    if net.state <= 2 then
       prep.recv(e)
+      dump(e.data)
     elseif net.state == 3 then
       play.recv(e)
     end
 
   elseif e.type == "connect" and net.state < 2 then
-    --e.peer:send("Greetings")
     prep.greeting(e.peer)
   elseif e.type == "disconnect" then
     dump("disconnected:"..tostring(e.peer))
@@ -254,7 +250,7 @@ function run(sc_flag)
   while not C.check_quit() do
 
     local c = C.poll_from_C()      -- commands from c
-    local e = net.host:service(500)  -- network event
+    local e = net.host:service(1)  -- network event
 
     if net.state < 1 then
       if e then net.proc_matcher(e) end
