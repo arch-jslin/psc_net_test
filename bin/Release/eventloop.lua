@@ -120,7 +120,10 @@ net.setup = function(tar)
 end
 
 net.reset = function()
-  if net.conn_farside then net.conn_farside:disconnect() end
+  if net.conn_farside then 
+    dump('disconnect from farside by hand')
+    net.conn_farside:disconnect() 
+  end
   if net.conn_matcher then net.conn_matcher:disconnect() end
   net.state  = 0
   net.greeting = 0
@@ -149,13 +152,9 @@ net.gotGreeting = function(src)
 end
 net.readyToPlay = function()
   net.state = 3
-  if net.tar.code == 0 then
-    net.asServer = true
-    net.asClient = false
+  if net.asServer == true then
     dump('Pose as '..'Server')
   else
-    net.asServer = false
-    net.asClient = true
     dump('Pose as '..'Client')
   end
 end
@@ -165,9 +164,9 @@ net.tick = function(cc)
     -- dump(cc)
   end
 
-  if net.state==3 and net.asServer == true then
-    play.poke(net.conn_farside)
-  end
+  -- if net.state==3 and net.asServer == true then
+  --   play.poke(net.conn_farside)
+  -- end
 
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
@@ -184,19 +183,14 @@ end
 
 net.proc_farside = function(e)
   if e.type == "receive" then
-
-    if e.data=='Greetings' and net.state < 2 then
-      --net.gotGreeting(e)
-    elseif e.data=='test' and net.state == 2 then
-      print("Lua: Got origin message: ", e.data, e.peer)
-    elseif net.state < 2 then
+    if net.state <= 2 then
       prep.recv(e)
     elseif net.state == 3 then
       play.recv(e)
     end
 
   elseif e.type == "connect" and net.state < 2 then
-    --e.peer:send("Greetings")
+    print("Lua: farside connected:", e.peer)
     prep.greeting(e.peer)
   elseif e.type == "disconnect" then
     dump("disconnected:"..tostring(e.peer))
@@ -210,7 +204,7 @@ net.proc_matcher= function(e)
   if e.type == "receive" then
     prep.recv(e)
   elseif e.type == "connect" then
-    print("Lua: connected:", e.peer)
+    print("Lua: matcher connected:", e.peer)
 
     if not net.conn_matcher then
       net.conn_matcher = e.peer
@@ -240,10 +234,14 @@ function run(sc_flag)
     PORT = PORT_A
     net.init(IP_LOCAL, PORT)
     ok = net.matcher("173.255.254.41", "12345")
+    net.asServer = true
+    net.asClient = false
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.init(IP_LOCAL, PORT)
     ok = net.matcher("173.255.254.41", "12345")
+    net.asServer = false
+    net.asClient = true
   end
 
   if not ok then return false end
