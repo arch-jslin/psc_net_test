@@ -1,14 +1,15 @@
 local enet    = require 'enet'
-local socket = require 'socket'
+local socket  = require 'socket'
 local ffi     = require 'ffi'
 local C       = ffi.C
-local kit      = require 'kit'
-local msg      = kit.msg
-local pmsg     = kit.pmsg
-local dump     = kit.getDump('Protocol_Gameplay')
+local kit     = require 'kit'
+local msg     = kit.msg
+local pmsg    = kit.pmsg
+local dump    = kit.getDump('Protocol_Gameplay')
 
 local EXPORT = {}
-
+local net    = nil
+local game   = nil
 
 -- recv functions : gameplay receiver
 
@@ -60,10 +61,16 @@ local function hit(peer, x,y)
   kit.send(m, peer)
 end
 
-EXPORT.setup = function(n) net = n end
 EXPORT.recv = recv
 EXPORT.poke = poke
 EXPORT.move = move
 EXPORT.hit = hit
+EXPORT.setup = function(n, g) 
+  net = n 
+  game = g
+end
+EXPORT.test = function()
+  dump(game, 'game=')
+end
 
 return EXPORT

@@ -32,7 +32,7 @@ local SERVER=1
 local CLIENT=2
 
 local net  = {}
-
+local game = {}
 
 -- connection management
 net.conn_matcher = nil
@@ -79,9 +79,10 @@ end
 
 net.matcher = function(ip, port)
   local function foo()
-    dump('connect to '..ip..":"..port)
-    net.conn_matcher = net.host:connect(ip..":"..port)
+    --dump('connect to '..ip..":"..port)
+    --net.conn_matcher = net.host:connect(ip..":"..port)
     --net.conn_matcher = net.host:connect("localhost:12345")
+    net.conn_matcher = net.host:connect(IP_LOCAL..":54321")
   end
 
   local ok, err = pcall(foo)
@@ -246,8 +247,8 @@ function run(sc_flag)
 
   if not ok then return false end
 
-  prep.setup(net)
-  play.setup(net)
+  prep.setup(net, game)
+  play.setup(net, game)
 
   while not C.check_quit() do
 

@@ -3,6 +3,12 @@ local mp     = require "luajit-msgpack-pure"
 
 local EXPORT = {}
 
+local function curry(f)
+  return function (x)
+    return function (y) return f(x,y) end
+  end
+end
+
 -- random string generator
 local Chars = {}
 for Loop = 0, 255 do
@@ -84,6 +90,8 @@ local function _strtab ( tbl )
 end
 
 -- construct a message object
+-- T = message type
+-- C = returning code (optional)
 EXPORT.msg = function (t, c)
   local r = {T=t}
   if c ~= nil then r.C = c end
@@ -101,7 +109,16 @@ EXPORT.pmsg = function(m)
   print(_strtab(m))
 end
 
--- address data
+
+local function _dump(header, text)
+  print(header..': '.._strtab(text))
+end
+
+EXPORT.getDump = function(h)
+  return curry(_dump)(h)
+end
+
+-- tool functions for address
 EXPORT.addr = function (peer)
   local i,p = string.gmatch(tostring(peer), "(.+):(%w+)")()
   return {ip=i, port=p}
@@ -114,12 +131,6 @@ end
 EXPORT.addr_cmp = function (a,b)
   if a ==nil or b==nil then return false end
   return a.ip==b.ip and a.port==b.port
-end
-
-local function curry(f)
-  return function (x)
-    return function (y) return f(x,y) end
-  end
 end
 
 local function _parse(hnd, e)
@@ -139,13 +150,7 @@ EXPORT.send = function (obj, peer)
   peer:send(mp.pack(obj))
 end
 
-local function _dump(header, text)
-  print(header..': '.._strtab(text))
-end
 
-EXPORT.getDump = function(h)
-  return curry(_dump)(h)
-end
 
 
 

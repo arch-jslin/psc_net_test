@@ -5,11 +5,11 @@ local C       = ffi.C
 local kit      = require 'kit'
 local msg      = kit.msg
 local pmsg     = kit.pmsg
-local dump     = kit.getDump('Protocol_Init')
+local dump     = kit.getDump('Protocol_Preproc')
 
 local EXPORT = {}
-
-local net = nil
+local net    = nil
+local game   = nil
 
 
 -- recv functions : connection receiver
@@ -21,6 +21,12 @@ RECV.TAR = function(m)
   net.reset()     -- say goodbye to matcher
   net.farside(m)  -- say hello to player
 end
+RECV.URE = function(m)
+  pmsg(m)
+  game.pid = m.pid
+  game.ppls = m.ppls
+end
+
 RECV.GREETING = function(m)
   pmsg(m)
   net.gotGreeting(m.src)
@@ -46,12 +52,16 @@ local function send_iam(ip, port, peer)
   local m = msg('IAM')
   m.ip    = ip
   m.port  = port
+  m.nick  = 'nick '..string.random(4, '%d')
   kit.send(m, peer)
 end
 
-EXPORT.setup = function(n) net = n end
 EXPORT.recv = recv
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
+EXPORT.setup = function(n, g) 
+  net = n 
+  game = g
+end
 
 return EXPORT

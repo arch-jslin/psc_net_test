@@ -37,10 +37,10 @@ EXPORT.reset = function (s)
   if s < 3 then inc = 1 end
 end
 
-EXPORT.connect = function (n, t, s)
+EXPORT.connect = function (n, tar, s)
   -- init farside information
   net = n
-  net.setup(t)
+  net.setup(tar)
 
   proc[1] = _step1
   proc[2] = _step2
