@@ -53,25 +53,19 @@ net.tm     = 0
 net.greeting = 0
 
 function net:tarPriAddr(i)
-  if i ~= nil then
-    return addr_str(net.tar.prialt)
-  end
+  if i ~= nil then return addr_str(net.tar.prialt) end
   return addr_str(net.tar.pri)
 end
 
 function net:tarPubAddr(i)
-  if i ~= nil and i > 0 and i < 6 then
-    return addr_str(net.tar.pubs[i])
-  elseif i ~= nil and i > 100 then
-    return addr_str(net.tar.pubalt)
+  if i ~= nil and i > 0 and i < 6 then return addr_str(net.tar.pubs[i])
+  elseif i ~= nil and i > 100     then return addr_str(net.tar.pubalt)
   end
   return addr_str(net.tar.pub)
 end
 
 net.init = function(ip, port)
-
   --ip = 'localhost'
-
   dump('create host '..ip..':'..port)
   net.reset()
   net.host = enet.host_create(ip..":"..port)
@@ -93,9 +87,7 @@ net.matcher = function(ip, port)
 end
 
 net.farside = function(info)
-  if info then
-    return ns.connect(net, info)
-  end
+  if info then return ns.connect(net, info) end
   return ns.connect_next()
 end
 
@@ -114,6 +106,7 @@ net.reset = function()
     dump('disconnect from farside by hand')
     net.conn_farside:disconnect() 
   end
+
   if net.conn_matcher then net.conn_matcher:disconnect() end
   net.state  = 0
   net.greeting = 0
@@ -121,8 +114,8 @@ net.reset = function()
 end
 
 net.waitGreeting = function()
-    dump('wait for greetings...'..tostring(net.greeting))
-    net.greeting = net.greeting + 1
+  dump('wait for greetings...'..tostring(net.greeting))
+  net.greeting = net.greeting + 1
 
   if net.greeting >= 2 then
     dump('wait too long... disconnect it')
@@ -150,6 +143,7 @@ net.readyToPlay = function()
 end
 
 net.tick = function(cc)
+
   if cc ~= 0 and cc ~= nil then
     -- dump(cc)
   end
@@ -161,13 +155,24 @@ net.tick = function(cc)
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
-    if net.tm % 5 == 0 then
-      dump('tm='..net.tm..' state='..net.state)
-    end
-
     if net.state==1 then
       net.waitGreeting()
     end
+
+    if net.tm % 90 == 0 and net.state >= 3 then
+      play.plist(net.conn_matcher)
+    end
+
+    -- keep-alive
+    if net.tm % 20 == 0 then
+      dump('poke server. tm='..net.tm..' state='..net.state)
+      prep.poke_server(net.conn_matcher)
+    end
+
+    -- can chat after login to matcher
+    -- if net.tm % 10 == 0 then
+    --   prep.chat_lobby(net.conn_matcher, 'lala '..os.time())
+    -- end
   end
 end
 
@@ -241,15 +246,16 @@ function run(sc_flag)
 
   while not C.check_quit() do
 
-    local c = C.poll_from_C()      -- commands from c
+    local c = C.poll_from_C()        -- commands from c
     local e = net.host:service(100)  -- network event
 
     if net.state < 1 then
       if e then net.proc_matcher(e) end
     elseif net.state >= 1 then
       if e then net.proc_farside(e) end
-      net.tick(c)
     end
+    
+    net.tick(c)
 
   end
 

@@ -1,5 +1,6 @@
 local kit      = require 'kit'
 local dump     = kit.getDump('Lua-Lobby')
+local msg      = kit.msg
 local sleep   = require 'socket'.sleep
 local EXPORT = {}
 
@@ -7,6 +8,15 @@ local EXPORT = {}
 local const = {
   MAX_PLAYER_A_ROOM=2,
 }
+
+-- broadcast message
+local function CHAT(sid, txt, type) 
+  local m = msg('CHAT')
+  m.sid = sid  -- source
+  m.txt = txt  -- content
+  m.type= type
+  return m
+end
 
 -- internal function & data structure
 local function _player(peer)
@@ -58,13 +68,21 @@ local function _room(c)  -- connection
     if reason ~= nil then dump(msg..' Reason: '..reason) end
 	end
 
-	r.sayto = function(pid, msg)
-    dump('sayto '..pid..' '..msg)
+	r.tell = function(sid, pid, txt, type)
+    dump('tell '..pid..' '..txt)    
+    local ppl = r.get(pid)
+    if ppl == nil then return end
+
+    local m = CHAT(sid, txt, type)
+    dump(m)
+    kit.send(m, ppl.peer)
 	end
 
-	r.bcast = function(msg, skip)
+	r.bcast = function(sid, txt)
     table.foreach(players, function(k,v) 
-      if skip ~= k then r.sayto(k, msg) end
+      if sid ~= k then
+        r.tell(sid, k, txt, 'b') 
+      end
     end)
 	end
 	
@@ -151,10 +169,6 @@ local function plist(pid)       -- list players in the room
   return ls
 end
 
-local function contain(pid)     -- room contains the player or not
-  return (room.get(pid) ~= nil)
-end
-
 EXPORT.connect    = connect
 EXPORT.disconnect = disconnect
 EXPORT.join    = join
@@ -163,7 +177,9 @@ EXPORT.say     = say
 EXPORT.status  = status
 EXPORT.plist   = plist
 EXPORT.pinfo   = pinfo
-EXPORT.contain = contain
+EXPORT.bcast   = function(sid,txt) room.bcast(sid,txt) end
+EXPORT.contain = function(pid) return (room.get(pid) ~= nil) end
+EXPORT.poke    = function(pid) room.poke(pid) end
 EXPORT.tick    = function() room.tick() end
 EXPORT.hi      = function() dump('hi') end
 

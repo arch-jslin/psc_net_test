@@ -45,6 +45,15 @@ RECV.PLS_R = function(m)
   end
 end
 
+RECV.CHAT = function(m)
+  dump(m)
+  local sid = m.sid
+  local txt = m.txt
+  local type= m.type
+  if type=='b' then
+    dump(sid..' says '..txt..' at Lobby')
+  end
+end
 
 -- receiver
 local recv = kit.getRecv(function (m)
@@ -74,8 +83,23 @@ local function plist(peer)
   m.pid = game.pid
   kit.send(m, peer)
 end
+local function poke_server(peer)
+  local m = msg('POKE')
+  m.pid = game.pid
+  kit.send(m, peer)
+end
+local function chat_lobby(peer, txt)
+  local m = msg('CHAT')
+  m.pid = game.pid
+  m.txt = txt
+  m.type= 'b' -- lobby
+  kit.send(m, peer)  
+end
+
 
 EXPORT.recv = recv
+EXPORT.chat_lobby  = chat_lobby
+EXPORT.poke_server = poke_server
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
 EXPORT.plist = plist
