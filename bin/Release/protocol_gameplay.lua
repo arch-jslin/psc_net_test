@@ -29,6 +29,12 @@ end
 RECV.GREETING = function()
   -- do nothing for duplicated greetings
 end
+RECV.PLS_R = function(m)
+  dump(m.T)
+
+  table.foreach(m.ppls, function(k, v) v.addr = kit.addr_ext(v.addr) end)
+  game.ppls = m.ppls
+end
 
 local recv = kit.getRecv(function (m)
   if RECV[m.T]==nil then
@@ -58,6 +64,11 @@ local function hit(peer, x,y)
   m.x = x
   m.y = y
   m.t = os.time()
+  kit.send(m, peer)
+end
+local function plist(peer)
+  local m = msg('PLS')
+  m.pid = pid
   kit.send(m, peer)
 end
 

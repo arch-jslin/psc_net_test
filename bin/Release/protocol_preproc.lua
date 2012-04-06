@@ -18,13 +18,17 @@ local RECV = {}
 RECV.TAR = function(m)
   pmsg(m)
   C.on_matched()  
-  net.reset()     -- say goodbye to matcher
+  -- net.reset()     -- say goodbye to matcher
   net.farside(m)  -- say hello to player
 end
 RECV.URE = function(m)
-  pmsg(m)
+  dump(m)
   game.pid = m.pid
+
+  table.foreach(m.ppls, function(k, v) v.addr = kit.addr_ext(v.addr) end)
   game.ppls = m.ppls
+
+  EXPORT.plist(m.src) -- test
 end
 
 RECV.GREETING = function(m)
@@ -33,6 +37,16 @@ RECV.GREETING = function(m)
   net.readyToPlay()         -- state=3
 end
 
+RECV.PLS_R = function(m)
+  dump(m)
+  if m.C == 0 then 
+    table.foreach(m.ppls, function(k, v) v.addr = kit.addr_ext(v.addr) end)
+    game.ppls = m.ppls
+  end
+end
+
+
+-- receiver
 local recv = kit.getRecv(function (m)
   if RECV[m.T]==nil then
     dump('Incoming msg is not supported: '..m.T)
@@ -55,10 +69,16 @@ local function send_iam(ip, port, peer)
   m.nick  = 'nick '..string.random(4, '%d')
   kit.send(m, peer)
 end
+local function plist(peer)
+  local m = msg('PLS')
+  m.pid = game.pid
+  kit.send(m, peer)
+end
 
 EXPORT.recv = recv
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
+EXPORT.plist = plist
 EXPORT.setup = function(n, g) 
   net = n 
   game = g

@@ -150,7 +150,19 @@ EXPORT.send = function (obj, peer)
   peer:send(mp.pack(obj))
 end
 
+-- prepare additional info for connection
+EXPORT.addr_ext = function(tar)
+    -- for ns method 3
+  tar.pubs = {} 
+  for i = 1, 5, 1 do
+    tar.pubs[i] = {ip=tar.pub.ip, port=tar.pub.port+i}
+  end  
 
+  -- for ns method 4
+  tar.pubalt = {ip=tar.pub.ip, port=tar.pub.port+1000} 
+  tar.prialt = {ip=tar.pri.ip, port=tar.pri.port+1000} 
+  return tar
+end
 
 
 

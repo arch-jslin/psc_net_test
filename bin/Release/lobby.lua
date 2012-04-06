@@ -24,6 +24,10 @@ local function _player(peer)
   p.peer = peer
   p.addr = nil
   p.nick = nil
+
+  p.disconnect = function()
+    p.peer:disconnect()
+  end
 	return p
 end
 
@@ -43,13 +47,15 @@ local function _room(c)  -- connection
     if r.size() > const.MAX_PLAYER_A_ROOM then return nil end
 
     local ppl = _player(peer)
-    players[ppl.id] = ppl
+    players[tostring(ppl.id)] = ppl
     return ppl
 	end
 
-	r.del = function(pid)
-    dump('delete '..pid)
+	r.del = function(pid, reason)
+    players[pid].disconnect()
     players[pid] = nil
+    local msg = 'delete '..pid
+    if reason ~= nil then dump(msg..' Reason: '..reason) end
 	end
 
 	r.sayto = function(pid, msg)
@@ -80,14 +86,13 @@ local function _room(c)  -- connection
 
   r.tick_sec = function()
     table.foreach(players, function(k,v) 
-      dump('check zombie'..k)
-      if r.is_zombie(k)==true then r.del(k) end
+      if r.is_zombie(k)==true then r.del(k, 'is zombie') end
     end)
   end
 
   r.is_zombie = function(pid)
     local tmp = r.get(pid)
-		return ( (now - r.get(pid).tm_poke) > 3 ) -- 5 mins 
+		return ( (now - r.get(pid).tm_poke) > 180 ) -- 3 mins 
 	end
 
 	return r
@@ -107,11 +112,13 @@ local function leave(pid)        -- player leaves room
 end
 
 local function say(pid, msg)     -- chat
-  dump(tostring(pid)..' says: '..msg, 'broadcast')
+  room.poke(pid)
+  dump(tostring(pid)..' says: '..msg)
   room.bcast(msg, pid)
 end
 
 local function status(pid, sta)  -- update plsyer's status
+  room.poke(pid)
   local ppl = room.get(pid)
   if ppl == nil then return false end
 
@@ -120,6 +127,7 @@ local function status(pid, sta)  -- update plsyer's status
 end
 
 local function pinfo(pid)        -- info about player
+  room.poke(pid)
   local ppl = room.get(pid)
   if ppl == nil then return nil end
 
@@ -131,10 +139,11 @@ local function pinfo(pid)        -- info about player
   return info
 end
 
-local function plist(skip)       -- list players in the room
-  local ls = {}
+local function plist(pid)       -- list players in the room
+  room.poke(pid)
+  local ls = {}                 -- except the requester
   table.foreach(room.all(), function(k,v) 
-    if skip ~= k then 
+    if pid ~= k then 
       local ppl = pinfo(k)
       table.insert(ls, ppl) 
     end
@@ -142,15 +151,20 @@ local function plist(skip)       -- list players in the room
   return ls
 end
 
+local function contain(pid)     -- room contains the player or not
+  return (room.get(pid) ~= nil)
+end
+
 EXPORT.connect    = connect
 EXPORT.disconnect = disconnect
-EXPORT.join   = join
-EXPORT.leave  = leave
-EXPORT.say    = say
-EXPORT.status = status
+EXPORT.join    = join
+EXPORT.leave   = leave
+EXPORT.say     = say
+EXPORT.status  = status
 EXPORT.plist   = plist
 EXPORT.pinfo   = pinfo
-EXPORT.hi     = function() dump('hi') end
-
+EXPORT.contain = contain
+EXPORT.tick    = function() room.tick() end
+EXPORT.hi      = function() dump('hi') end
 
 return EXPORT

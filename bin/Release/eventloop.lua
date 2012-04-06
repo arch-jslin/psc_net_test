@@ -106,18 +106,7 @@ net.setup = function(tar)
   net.iam.pri = {ip=IP_LOCAL, port=PORT}  
   net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}  
 
-  net.tar = tar
-
-  -- for ns method 3
-  net.tar.pubs = {} 
-  for i = 1, 5, 1 do
-    net.tar.pubs[i] = {ip=net.tar.pub.ip, port=net.tar.pub.port+i}
-  end  
-
-  -- for ns method 4
-  net.tar.pubalt = {ip=net.tar.pub.ip, port=net.tar.pub.port+1000} 
-  net.tar.prialt = {ip=net.tar.pri.ip, port=net.tar.pri.port+1000} 
-
+  net.tar = kit.addr_ext(tar)
 end
 
 net.reset = function()
@@ -165,15 +154,15 @@ net.tick = function(cc)
     -- dump(cc)
   end
 
-  -- if net.state==3 and net.asServer == true then
-  --   play.poke(net.conn_farside)
-  -- end
+  if net.state==3 and net.tm%10==0 then
+    play.plist(net.conn_matcher)
+  end
 
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
-    if net.tm % 10 == 0 then
-      dump('tm='..net.tm)
+    if net.tm % 5 == 0 then
+      dump('tm='..net.tm..' state='..net.state)
     end
 
     if net.state==1 then
@@ -253,7 +242,7 @@ function run(sc_flag)
   while not C.check_quit() do
 
     local c = C.poll_from_C()      -- commands from c
-    local e = net.host:service(500)  -- network event
+    local e = net.host:service(100)  -- network event
 
     if net.state < 1 then
       if e then net.proc_matcher(e) end
