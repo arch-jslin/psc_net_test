@@ -1,7 +1,7 @@
-local kit      = require 'kit'
-local dump     = kit.getDump('Lua-Lobby')
-local msg      = kit.msg
-local sleep   = require 'socket'.sleep
+local kit    = require 'kit'
+local dump   = kit.getDump('Lua-Lobby')
+local msg    = kit.msg
+local sleep  = require 'socket'.sleep
 local EXPORT = {}
 
 -- Constants
@@ -10,11 +10,11 @@ local const = {
 }
 
 -- broadcast message
-local function CHAT(sid, txt, type) 
+local function CHAT(sid, txt, type)
   local m = msg('CHAT')
-  m.sid = sid  -- source
-  m.txt = txt  -- content
-  m.type= type
+  m.sid  = sid  -- source
+  m.txt  = txt  -- content
+  m.type = type
   return m
 end
 
@@ -52,13 +52,13 @@ local function _room(c)  -- connection
   r.get = function(pid)
     return players[pid]
   end
-	
+
   r.add = function(peer)
     if r.size() > const.MAX_PLAYER_A_ROOM then return nil end
 
-    local ppl = _player(peer)
-    players[tostring(ppl.id)] = ppl
-    return ppl
+    local p = _player(peer)
+    players[tostring(p.id)] = p
+    return p
 	end
 
 	r.del = function(pid, reason)
@@ -69,48 +69,56 @@ local function _room(c)  -- connection
 	end
 
 	r.tell = function(sid, pid, txt, type)
-    dump('tell '..pid..' '..txt)    
-    local ppl = r.get(pid)
-    if ppl == nil then return end
+    dump('tell '..pid..' '..txt)
+    local p = r.get(pid)
+    if p == nil then return end
 
     local m = CHAT(sid, txt, type)
     dump(m)
-    kit.send(m, ppl.peer)
+    kit.send(m, p.peer)
 	end
 
 	r.bcast = function(sid, txt)
-    table.foreach(players, function(k,v) 
+    table.foreach(players, function(k,v)
       if sid ~= k then
-        r.tell(sid, k, txt, 'b') 
+        r.tell(sid, k, txt, 'b')
       end
     end)
 	end
-	
+
   r.poke = function(pid)
     local p = r.get(pid)
     if p ~= nil then p.tm_poke = os.time() end
 	end
-  
+
   r.all = function()
     return players
   end
-	
+
   r.tick = function()
-    if (os.time() - now > 0) then 
-      now = os.time() 
+    if (os.time() - now > 0) then
+      now = os.time()
       r.tick_sec()
-    end  
+    end
 	end
 
   r.tick_sec = function()
-    table.foreach(players, function(k,v) 
-      if r.is_zombie(k)==true then r.del(k, 'is zombie') end
+    local cnt = 0
+    table.foreach(players, function(k,v)
+      if r.is_zombie(k)==true then
+        r.del(k, 'zombie')
+      end
+      cnt = cnt +1
     end)
+
+    if now % 10 == 0 then
+      dump('#players online: '..cnt)
+    end
   end
 
   r.is_zombie = function(pid)
     local tmp = r.get(pid)
-		return ( (now - r.get(pid).tm_poke) > 180 ) -- 3 mins 
+		return ( (now - r.get(pid).tm_poke) > 30 ) -- 30 secs
 	end
 
 	return r
@@ -137,33 +145,33 @@ end
 
 local function status(pid, sta)  -- update plsyer's status
   room.poke(pid)
-  local ppl = room.get(pid)
-  if ppl == nil then return false end
+  local p = room.get(pid)
+  if p == nil then return false end
 
-  ppl.status = sta
+  p.status = sta
   return true
 end
 
 local function pinfo(pid)        -- info about player
   room.poke(pid)
-  local ppl = room.get(pid)
-  if ppl == nil then return nil end
+  local p = room.get(pid)
+  if p == nil then return nil end
 
   local info = {}
   info.pid = pid
-  info.status = ppl.status
-  info.addr = ppl.addr
-  info.nick = ppl.info
+  info.status = p.status
+  info.addr = p.addr
+  info.nick = p.nick
   return info
 end
 
 local function plist(pid)       -- list players in the room
   room.poke(pid)
   local ls = {}                 -- except the requester
-  table.foreach(room.all(), function(k,v) 
-    if pid ~= k then 
-      local ppl = pinfo(k)
-      table.insert(ls, ppl) 
+  table.foreach(room.all(), function(k,v)
+    if pid ~= k then
+      local p = pinfo(k)
+      table.insert(ls, p)
     end
   end)
   return ls

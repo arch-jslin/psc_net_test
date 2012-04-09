@@ -1,9 +1,9 @@
-local enet    = require 'enet'
-local socket = require 'socket'
+local enet     = require 'enet'
+local socket   = require 'socket'
 -- local gettime = require 'socket'.gettime
 -- local sleep   = require 'socket'.sleep
-local ffi     = require 'ffi'
-local C       = ffi.C
+local ffi      = require 'ffi'
+local C        = ffi.C
 local kit      = require 'kit'
 local addr     = kit.addr
 local addr_cmp = kit.addr_cmp
@@ -82,7 +82,7 @@ net.matcher = function(ip, port)
   local ok, err = pcall(foo)
 
   if not ok then dump(err) end
-  
+
   return ok
 end
 
@@ -93,24 +93,24 @@ end
 
 net.setup = function(tar)
   net.reset()
-  
+
   net.iam = {}
-  net.iam.pri = {ip=IP_LOCAL, port=PORT}  
-  net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}  
+  net.iam.pri = {ip=IP_LOCAL, port=PORT}
+  net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}
 
   net.tar = kit.addr_ext(tar)
 end
 
 net.reset = function()
-  if net.conn_farside then 
+  if net.conn_farside then
     dump('disconnect from farside by hand')
-    net.conn_farside:disconnect() 
+    net.conn_farside:disconnect()
   end
 
   if net.conn_matcher then net.conn_matcher:disconnect() end
-  net.state  = 0
+  net.state    = 0
   net.greeting = 0
-  net.working = false
+  net.working  = false
 end
 
 net.waitGreeting = function()
@@ -133,6 +133,7 @@ net.gotGreeting = function(src)
   net.conn_farside = src
   dump('got greetings. state=2 from '..tostring(src))
 end
+
 net.readyToPlay = function()
   net.state = 3
   if net.asServer == true then
@@ -144,18 +145,19 @@ end
 
 net.tick = function(cc)
 
-  if cc ~= 0 and cc ~= nil then
-    -- dump(cc)
+  -- commands from terminal
+  if cc ~= 0 and cc ~= 65 and cc ~= nil then
+      dump('>>>>>>>>>'..cc)
   end
 
-  if net.state==3 and net.tm%10==0 then
+  if net.tm % 10 == 0 and net.state == 3 then
     play.plist(net.conn_matcher)
   end
 
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
-    if net.state==1 then
+    if net.state == 1 then
       net.waitGreeting()
     end
 
@@ -164,15 +166,15 @@ net.tick = function(cc)
     end
 
     -- keep-alive
-    if net.tm % 20 == 0 then
+    if net.tm % 20 == 0 and net.working then
       dump('poke server. tm='..net.tm..' state='..net.state)
       prep.poke_server(net.conn_matcher)
     end
 
     -- can chat after login to matcher
-    -- if net.tm % 10 == 0 then
-    --   prep.chat_lobby(net.conn_matcher, 'lala '..os.time())
-    -- end
+    if net.tm % 10 == 0 then
+      prep.chat_lobby(net.conn_matcher, 'lala'..string.random(4)..os.time())
+    end
   end
 end
 
@@ -219,22 +221,21 @@ net.proc_matcher= function(e)
   end
 end
 
-
 -- Entry point
 -- global function so it can be called from C++
-function run(sc_flag) 
+function run(sc_flag)
   local ok = true
 
   if sc_flag == SERVER then
     PORT = PORT_A
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher("173.255.254.41", "12345")
+    ok = net.matcher("173.255.254.41", "54321")
     net.asServer = true
     net.asClient = false
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher("173.255.254.41", "12345")
+    ok = net.matcher("173.255.254.41", "54321")
     net.asServer = false
     net.asClient = true
   end
@@ -254,7 +255,7 @@ function run(sc_flag)
     elseif net.state >= 1 then
       if e then net.proc_farside(e) end
     end
-    
+
     net.tick(c)
 
   end

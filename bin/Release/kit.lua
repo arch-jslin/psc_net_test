@@ -1,7 +1,8 @@
 
-local mp     = require "luajit-msgpack-pure"
+local mp      = require "luajit-msgpack-pure"
+local gettime = require 'socket'.gettime
 
-local EXPORT = {}
+local EXPORT  = {}
 
 local function curry(f)
   return function (x)
@@ -9,7 +10,10 @@ local function curry(f)
   end
 end
 
+
 -- random string generator
+math.randomseed(socket.gettime()*10000)
+
 local Chars = {}
 for Loop = 0, 255 do
    Chars[Loop+1] = string.char(Loop)
@@ -153,14 +157,14 @@ end
 -- prepare additional info for connection
 EXPORT.addr_ext = function(tar)
     -- for ns method 3
-  tar.pubs = {} 
+  tar.pubs = {}
   for i = 1, 5, 1 do
     tar.pubs[i] = {ip=tar.pub.ip, port=tar.pub.port+i}
-  end  
+  end
 
   -- for ns method 4
-  tar.pubalt = {ip=tar.pub.ip, port=tar.pub.port+1000} 
-  tar.prialt = {ip=tar.pri.ip, port=tar.pri.port+1000} 
+  tar.pubalt = {ip=tar.pub.ip, port=tar.pub.port+1000}
+  tar.prialt = {ip=tar.pri.ip, port=tar.pri.port+1000}
   return tar
 end
 
