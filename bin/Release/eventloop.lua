@@ -1,9 +1,9 @@
-local enet    = require 'enet'
-local socket = require 'socket'
+local enet     = require 'enet'
+local socket   = require 'socket'
 -- local gettime = require 'socket'.gettime
 -- local sleep   = require 'socket'.sleep
-local ffi     = require 'ffi'
-local C       = ffi.C
+local ffi      = require 'ffi'
+local C        = ffi.C
 local kit      = require 'kit'
 local addr     = kit.addr
 local addr_cmp = kit.addr_cmp
@@ -32,7 +32,7 @@ local SERVER=1
 local CLIENT=2
 
 local net  = {}
-
+local game = {}
 
 -- connection management
 net.conn_matcher = nil
@@ -53,25 +53,19 @@ net.tm     = 0
 net.greeting = 0
 
 function net:tarPriAddr(i)
-  if i ~= nil then
-    return addr_str(net.tar.prialt)
-  end
+  if i ~= nil then return addr_str(net.tar.prialt) end
   return addr_str(net.tar.pri)
 end
 
 function net:tarPubAddr(i)
-  if i ~= nil and i > 0 and i < 6 then
-    return addr_str(net.tar.pubs[i])
-  elseif i ~= nil and i > 100 then
-    return addr_str(net.tar.pubalt)
+  if i ~= nil and i > 0 and i < 6 then return addr_str(net.tar.pubs[i])
+  elseif i ~= nil and i > 100     then return addr_str(net.tar.pubalt)
   end
   return addr_str(net.tar.pub)
 end
 
 net.init = function(ip, port)
-
   --ip = 'localhost'
-
   dump('create host '..ip..':'..port)
   net.reset()
   net.host = enet.host_create(ip..":"..port)
@@ -79,57 +73,49 @@ end
 
 net.matcher = function(ip, port)
   local function foo()
-    dump('connect to '..ip..":"..port)
-    net.conn_matcher = net.host:connect(ip..":"..port)
+    --dump('connect to '..ip..":"..port)
+    --net.conn_matcher = net.host:connect(ip..":"..port)
     --net.conn_matcher = net.host:connect("localhost:12345")
+    net.conn_matcher = net.host:connect(IP_LOCAL..":54321")
   end
 
   local ok, err = pcall(foo)
 
   if not ok then dump(err) end
-  
+
   return ok
 end
 
 net.farside = function(info)
-  if info then
-    return ns.connect(net, info)
-  end
+  if info then return ns.connect(net, info) end
   return ns.connect_next()
 end
 
 net.setup = function(tar)
   net.reset()
-  
+
   net.iam = {}
-  net.iam.pri = {ip=IP_LOCAL, port=PORT}  
-  net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}  
+  net.iam.pri = {ip=IP_LOCAL, port=PORT}
+  net.iam.prialt = {ip=IP_LOCAL, port=PORT+1000}
 
-  net.tar = tar
-
-  -- for ns method 3
-  net.tar.pubs = {} 
-  for i = 1, 5, 1 do
-    net.tar.pubs[i] = {ip=net.tar.pub.ip, port=net.tar.pub.port+i}
-  end  
-
-  -- for ns method 4
-  net.tar.pubalt = {ip=net.tar.pub.ip, port=net.tar.pub.port+1000} 
-  net.tar.prialt = {ip=net.tar.pri.ip, port=net.tar.pri.port+1000} 
-
+  net.tar = kit.addr_ext(tar)
 end
 
 net.reset = function()
-  if net.conn_farside then net.conn_farside:disconnect() end
+  if net.conn_farside then
+    dump('disconnect from farside by hand')
+    net.conn_farside:disconnect()
+  end
+
   if net.conn_matcher then net.conn_matcher:disconnect() end
-  net.state  = 0
+  net.state    = 0
   net.greeting = 0
-  net.working = false
+  net.working  = false
 end
 
 net.waitGreeting = function()
-    dump('wait for greetings...'..tostring(net.greeting))
-    net.greeting = net.greeting + 1
+  dump('wait for greetings...'..tostring(net.greeting))
+  net.greeting = net.greeting + 1
 
   if net.greeting >= 5 then
     dump('wait too long... disconnect it')
@@ -150,49 +136,60 @@ end
 
 net.readyToPlay = function()
   net.state = 3
-  if net.tar.code == 0 then
-    net.asServer = true
-    net.asClient = false
+  if net.asServer == true then
     dump('Pose as '..'Server')
   else
-    net.asServer = false
-    net.asClient = true
     dump('Pose as '..'Client')
   end
 end
 
 net.tick = function(cc)
+  -- command from terminal
   if cc ~= 0 and cc ~= nil then
     if net.working then 
       kit.send(msg('cmd', cc), net.conn_farside)
       print("RTT: "..net.conn_farside:get_rtt())
     end
   end
+  
+  if net.tm % 10 == 0 and net.state == 3 then
+    play.plist(net.conn_matcher)
+  end
 
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
-    if net.tm % 10 == 0 then
-      dump('tm='..net.tm)
+    if net.state == 1 then
+      net.waitGreeting()
     end
 
-    if net.state==1 then
-      net.waitGreeting()
+    if net.tm % 90 == 0 and net.state >= 3 then
+      play.plist(net.conn_matcher)
+    end
+
+    -- keep-alive
+    if net.tm % 20 == 0 and net.working then
+      dump('poke server. tm='..net.tm..' state='..net.state)
+      prep.poke_server(net.conn_matcher)
+    end
+
+    -- can chat after login to matcher
+    if net.tm % 10 == 0 then
+      prep.chat_lobby(net.conn_matcher, 'lala'..string.random(4)..os.time())
     end
   end
 end
 
 net.proc_farside = function(e)
   if e.type == "receive" then
-
     if net.state <= 2 then
       prep.recv(e)
       dump(e.data)
     elseif net.state == 3 then
       play.recv(e)
     end
-
   elseif e.type == "connect" and net.state < 2 then
+    print("Lua: farside connected:", e.peer)
     prep.greeting(e.peer)
   elseif e.type == "disconnect" then
     dump("disconnected:"..tostring(e.peer))
@@ -206,7 +203,7 @@ net.proc_matcher= function(e)
   if e.type == "receive" then
     prep.recv(e)
   elseif e.type == "connect" then
-    print("Lua: connected:", e.peer)
+    print("Lua: matcher connected:", e.peer)
 
     if not net.conn_matcher then
       net.conn_matcher = e.peer
@@ -226,38 +223,42 @@ net.proc_matcher= function(e)
   end
 end
 
-
 -- Entry point
 -- global function so it can be called from C++
-function run(sc_flag) 
+function run(sc_flag)
   local ok = true
 
   if sc_flag == SERVER then
     PORT = PORT_A
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher("173.255.254.41", "12345")
+    ok = net.matcher("173.255.254.41", "54321")
+    net.asServer = true
+    net.asClient = false
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.init(IP_LOCAL, PORT)
-    ok = net.matcher("173.255.254.41", "12345")
+    ok = net.matcher("173.255.254.41", "54321")
+    net.asServer = false
+    net.asClient = true
   end
 
   if not ok then return false end
 
-  prep.setup(net)
-  play.setup(net)
+  prep.setup(net, game)
+  play.setup(net, game)
 
   while not C.check_quit() do
 
-    local c = C.poll_from_C()      -- commands from c
-    local e = net.host:service(1)  -- network event
+    local c = C.poll_from_C()        -- commands from c
+    local e = net.host:service(100)  -- network event
 
     if net.state < 1 then
       if e then net.proc_matcher(e) end
     elseif net.state >= 1 then
       if e then net.proc_farside(e) end
-      net.tick(c)
     end
+
+    net.tick(c)
 
   end
 

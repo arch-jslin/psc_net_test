@@ -66,6 +66,7 @@ end
 -- system functions
 local function match()
   local sz = table.getn(ppl)
+    
   if sz > 1 then
     local p1 = ppl[1]
     local p2 = ppl[2]
