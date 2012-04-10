@@ -132,10 +132,11 @@ int main()
             }
             CH = 0;
         }
-
-        if( N_STATE==N_CONNECTED_SERV || N_STATE==N_MATCHED) {
-            boost::mutex::scoped_lock l(MQ_MUTEX);
-            MQ.push_back(65);
+        else if( CH >= '1' && CH <= '4' ) {
+            if( L && thLua && N_STATE == N_MATCHED ) {
+                boost::mutex::scoped_lock l(MQ_MUTEX);
+                MQ.push_back(CH);
+            }
         }
     }
     return 0;
