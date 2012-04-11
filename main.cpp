@@ -124,13 +124,11 @@ int main()
                 }
                 thLua = new boost::thread( bind(start_lua, CH) );
             }
-            CH = 0;
         }
         else if( CH == 'p' ) {
             if( L ) {
                 LUA_QUIT = true;
             }
-            CH = 0;
         }
         else if( CH >= '1' && CH <= '4' ) {
             if( L && thLua && N_STATE == N_MATCHED ) {
@@ -138,6 +136,7 @@ int main()
                 MQ.push_back(CH);
             }
         }
+        CH = 0; //reset CH here
     }
     return 0;
 }
