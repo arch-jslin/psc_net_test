@@ -35,7 +35,6 @@ local function PLS_R(ppl, code)
   return m
 end
 
-
 --
 -- recv functions
 --
@@ -76,6 +75,7 @@ local function POKE(m)
   local pid  = m.pid
   lobby.poke(pid)
 end
+
 local function CHAT(m)
   dump(m.T)
   local sid  = m.pid
