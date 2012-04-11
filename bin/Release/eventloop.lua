@@ -272,6 +272,7 @@ function run(sc_flag)
 
   prep.setup(net, game)
   play.setup(net, game)
+    -- for testing
 
   if not net.gotoLobby() then return false end
 
