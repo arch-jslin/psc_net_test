@@ -12,7 +12,6 @@ local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Lua: Self IP: "..self_ip )
---local host = enet.host_create('localhost'..":54321")
 local host = enet.host_create(self_ip..":54321")
 
 --
@@ -29,9 +28,8 @@ end
 
 -- response player list to client
 local function PLS_R(ppl, code)
-  local m = msg('PLS_R')
+  local m = msg('PLS_R', code)
   m.ppl = ppl
-  m.code = code
   return m
 end
 

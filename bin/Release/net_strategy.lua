@@ -1,5 +1,5 @@
 local kit      = require 'kit'
-local dump     = kit.getDump('Lua-NS')
+local dump     = kit.getDump('Lua-NetStt')
 local sleep    = require 'socket'.sleep
 local addr_str = kit.addr_str
 
@@ -25,11 +25,11 @@ local function _step3() -- connect to public ip by increasing port number
 end
 
 local function _step4() -- connect to farside by opening new port
-  local addr = net.iam.prialt
-  net.init(addr.ip, addr.port)
-  sleep(2)  -- wait for farside's initialization
-  -- dump('connect to '..net:tarPriAddr(1000))
-  net.conn_farside = net.host:connect(net:tarPriAddr(1000))
+  -- local addr = net.iam.prialt
+  -- net.init(addr.ip, addr.port)
+  -- sleep(2)  -- wait for farside's initialization
+  -- -- dump('connect to '..net:tarPriAddr(1000))
+  -- net.conn_farside = net.host:connect(net:tarPriAddr(1000))
 end
 
 EXPORT.reset = function (s)
@@ -67,7 +67,7 @@ EXPORT.connect_next = function ()
   if ok==false then
     dump(err)
   else
-    net.state = 1
+    -- net.state = net.goto
   end
 
   if step == 3 and inc < 5 then

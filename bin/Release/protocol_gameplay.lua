@@ -26,14 +26,16 @@ end
 RECV.POKE = function(m)
   pmsg(m)
 end
-RECV.GREETING = function()
-  -- do nothing for duplicated greetings
+RECV.GREETING = function(m)
+  dump('play')
+  pmsg(m)
+  net.gotGreeting(m.src)
 end
 RECV.PLS_R = function(m)
   dump(m.T)
 
-  table.foreach(m.ppls, function(k, v) v.addr = kit.addr_ext(v.addr) end)
-  game.ppls = m.ppls
+  table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
+  game.ppl = m.ppl
 end
 
 local recv = kit.getRecv(function (m)
@@ -41,14 +43,13 @@ local recv = kit.getRecv(function (m)
     dump('Incoming msg is not supported: '..m.T)
     return
   end
-
   RECV[m.T](m)
 end)
 
 -- outgoing messages
 local function poke(peer)
   local m = msg('POKE')
-  m.t = os.time()
+  m.tm = os.time()
   kit.send(m, peer)
 end
 
@@ -56,19 +57,19 @@ local function move(peer, x,y)
   local m = msg('MOV')
   m.x = x
   m.y = y
-  m.t = os.time()
+  m.tm = os.time()
   kit.send(m, peer)
 end
 local function hit(peer, x,y)
   local m = msg('HIT')
   m.x = x
   m.y = y
-  m.t = os.time()
+  m.tm = os.time()
   kit.send(m, peer)
 end
 local function plist(peer)
   local m = msg('PLS')
-  m.pid = pid
+  m.pid = game.pid
   kit.send(m, peer)
 end
 
@@ -76,6 +77,7 @@ EXPORT.recv = recv
 EXPORT.poke = poke
 EXPORT.move = move
 EXPORT.hit = hit
+EXPORT.plist = plist
 EXPORT.setup = function(n, g)
   net = n
   game = g

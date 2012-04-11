@@ -15,32 +15,26 @@ local game   = nil
 -- recv functions : connection receiver
 local RECV = {}
 
--- replaced by plist()
--- RECV.TAR = function(m)
---   pmsg(m)
---   C.on_matched()
---   net.reset()     -- say goodbye to matcher
---   net.farside(m)  -- say hello to player
--- end
-
 RECV.URE = function(m)
-  dump(m)
+  dump(m.T)
   game.pid = m.pid
 
   table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
   game.ppl = m.ppl
 
+  net.gotoLobbyReady()     -- switch net state
+
   EXPORT.plist(m.src) -- test
 end
 
 RECV.GREETING = function(m)
+  dump('preproc')
   pmsg(m)
   net.gotGreeting(m.src)
-  net.readyToPlay()         -- state=3
 end
 
 RECV.PLS_R = function(m)
-  dump(m)
+  dump(m.T)
   if m.C==0 then
     table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
     game.ppl = m.ppl
@@ -63,7 +57,6 @@ local recv = kit.getRecv(function (m)
     dump('Incoming msg is not supported: '..m.T)
     return
   end
-
   RECV[m.T](m)
 end)
 

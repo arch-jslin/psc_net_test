@@ -140,7 +140,7 @@ end
 local function say(pid, msg)     -- chat
   room.poke(pid)
   dump(tostring(pid)..' says: '..msg)
-  room.bcast(msg, pid)
+  room.bcast(pid, msg)
 end
 
 local function status(pid, sta)  -- update plsyer's status
