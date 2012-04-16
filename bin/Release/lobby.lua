@@ -52,6 +52,14 @@ local function _room(c)  -- connection
   r.get = function(pid)
     return players[pid]
   end
+  r.lookup = function(e, cb)
+    table.foreach(players, function(k,v)
+      if tostring(v.peer)==tostring(e.peer) then
+        dump('lalalalala')
+        cb(k)
+      end
+    end)
+  end
 
   r.add = function(peer)
     if r.size() > const.MAX_PLAYER_A_ROOM then return nil end
@@ -176,6 +184,13 @@ local function plist(pid)       -- list players in the room
   end)
   return ls
 end
+
+local function disconnect(e)
+  room.lookup(e, function(pid)
+    room.del(pid, 'disconnect')
+  end)
+end
+
 
 EXPORT.connect    = connect
 EXPORT.disconnect = disconnect

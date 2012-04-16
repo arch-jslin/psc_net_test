@@ -116,7 +116,6 @@ end
 net.matcher = function(ip, port)
   local function foo()
     net.conn_matcher = net.host:connect(ip..":"..port)
-    --net.conn_matcher = net.host:connect("localhost:12345")
     -- net.conn_matcher = net.host:connect(IP_LOCAL..":54321")
   end
 
@@ -277,11 +276,15 @@ function run(sc_flag)
 
   if not net.gotoLobby() then return false end
 
+  local busy = false
 
   while not C.check_quit() do
 
-    local c = C.poll_from_C()        -- commands from c
-    local e = net.host:service(100)  -- network event
+    local c = C.poll_from_C()      -- commands from c
+
+    if busy then t = 1 else t = 100 end
+
+    local e = net.host:service(t)  -- network event
 
     if e then
       if net.state <= Const.IN_LOBBY then
@@ -289,6 +292,9 @@ function run(sc_flag)
       else
         net.proc_farside(e)
       end
+      busy = true
+    else
+      busy = false
     end
 
     net.tick(c)

@@ -101,12 +101,13 @@ HAND.receive = function(e)
 end
 
 HAND.disconnect = function(e)
-  print("Connect:", e.peer)
+  print("Disconnect:", e.peer)
+  lobby.disconnect(e)
   return true
 end
 
 HAND.connect = function(e)
-  print("Disconnect:", e.peer)
+  print("Connect:", e.peer)
   local pub = addr(e.peer)
   return true
 end
