@@ -115,10 +115,9 @@ end
 
 net.matcher = function(ip, port)
   local function foo()
-    --dump('connect to '..ip..":"..port)
-    --net.conn_matcher = net.host:connect(ip..":"..port)
+    net.conn_matcher = net.host:connect(ip..":"..port)
     --net.conn_matcher = net.host:connect("localhost:12345")
-    net.conn_matcher = net.host:connect(IP_LOCAL..":54321")
+    -- net.conn_matcher = net.host:connect(IP_LOCAL..":54321")
   end
 
   local ok, err = pcall(foo)
@@ -272,7 +271,6 @@ function run(sc_flag)
 
   prep.setup(net, game)
   play.setup(net, game)
-    -- for testing
 
   if not net.gotoLobby() then return false end
 
