@@ -1,7 +1,7 @@
 local enet     = require 'enet'
 local socket   = require 'socket'
 -- local gettime = require 'socket'.gettime
--- local sleep   = require 'socket'.sleep
+local sleep   = require 'socket'.sleep
 local ffi      = require 'ffi'
 local C        = ffi.C
 local kit      = require 'kit'
@@ -181,7 +181,12 @@ net.tick = function(cc)
       if cc == 49 then
         net.gotoPlayer()
       elseif cc==50 then
-        if net.state >= Const.READY_TO_PLAY then play.hit(net.conn_farside, 0,0) end
+        if net.state >= Const.READY_TO_PLAY then
+          for i = 1, 100 do
+            play.hit(net.conn_farside, 0,i)
+            sleep(0.001)
+          end
+        end
       elseif cc==51 then
       elseif cc==52 then
         prep.chat_lobby(net.conn_matcher, string.random(6)..os.time())
@@ -236,11 +241,9 @@ net.proc_matcher= function(e)
     net.working = true
 
     if net.state == Const.CONN_TO_LOBBY then
-      dump('send IAM')
       prep.send_iam(IP_LOCAL, PORT, e.peer)
     elseif net.state == Const.IN_LOBBY then
       prep.greeting(e.peer)
-      dump('xxxxxxxxx current state '..net.state)
     end
 
   elseif e.type == "disconnect" then

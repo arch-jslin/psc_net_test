@@ -108,7 +108,7 @@ local function _room(c)  -- connection
       if r.is_zombie(k)==true then
         r.del(k, 'zombie')
       end
-      cnt = cnt +1
+      cnt = cnt + 1
     end)
 
     if now % 10 == 0 then
