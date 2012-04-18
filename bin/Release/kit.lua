@@ -12,7 +12,7 @@ end
 
 
 -- random string generator
-math.randomseed(socket.gettime()*10000)
+math.randomseed(socket.gettime()*1000)
 
 local Chars = {}
 for Loop = 0, 255 do
@@ -167,7 +167,6 @@ EXPORT.addr_ext = function(tar)
   tar.prialt = {ip=tar.pri.ip, port=tar.pri.port+1000}
   return tar
 end
-
 
 EXPORT.str_test1 = string.random(1024)
 EXPORT.str_test2 = string.random(10240)
