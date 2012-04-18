@@ -143,6 +143,8 @@ local function _parse(hnd, e)
   if (type(m)=='table') then
     m.src = e.peer
     hnd(m)
+  else
+    dump('received command is not an object: '..m)
   end
 end
 
@@ -156,7 +158,7 @@ end
 
 -- prepare additional info for connection
 EXPORT.addr_ext = function(tar)
-    -- for ns method 3
+  -- for ns method 3
   tar.pubs = {}
   for i = 1, 5, 1 do
     tar.pubs[i] = {ip=tar.pub.ip, port=tar.pub.port+i}

@@ -27,7 +27,7 @@ local PORT_A = 2501
 local PORT_B = 2502
 local PORT = 2501
 local IP_LOCAL = socket.dns.toip( socket.dns.gethostname() )
-dump( "Lua: Local IP: "..IP_LOCAL )
+dump( "Local IP: "..IP_LOCAL )
 local SERVER=1
 local CLIENT=2
 
@@ -85,13 +85,13 @@ net.gotoGame    = function() net.state = Const.IN_GAME end
 net.gotoGiveup  = function() net.state = Const.GIVE_UP end
 
 -- connection management
-net.conn_server = nil
+net.conn_server  = nil
 net.conn_farside = nil
-net.host    = nil
-net.working = false
-net.state  = Const.OFFLINE
-net.tar    = nil  -- farside information
-net.tm     = 0
+net.host     = nil
+net.working  = false
+net.state    = Const.OFFLINE
+net.tar      = nil  -- farside information
+net.tm       = 0
 net.greeting = 0
 
 function net:tarPriAddr(i)
@@ -107,7 +107,6 @@ function net:tarPubAddr(i)
 end
 
 net.init = function(ip, port)
-  --ip = 'localhost'
   dump('create host '..ip..':'..port)
   net.reset()
   net.host = enet.host_create(ip..":"..port)
@@ -178,7 +177,7 @@ net.tick = function(cc)
       elseif cc==50 then
         if net.state >= Const.READY_TO_PLAY then
           for i = 1, 100 do
-            play.hit(net.conn_farside, 0,i)
+            play.hit(net.conn_farside, 0, i)
             --net.host:flush()
           end
         end

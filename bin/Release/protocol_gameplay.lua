@@ -29,13 +29,11 @@ RECV.POKE = function(m)
   pmsg(m)
 end
 RECV.GREETING = function(m)
-  dump('play')
   pmsg(m)
   net.gotGreeting(m.src)
 end
 RECV.PLS_R = function(m)
   dump(m.T)
-
   table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
   game.ppl = m.ppl
 end
@@ -83,9 +81,6 @@ EXPORT.plist = plist
 EXPORT.setup = function(n, g)
   net = n
   game = g
-end
-EXPORT.test = function()
-  dump(game, 'game=')
 end
 
 return EXPORT

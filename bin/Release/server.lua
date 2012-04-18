@@ -11,7 +11,7 @@ local dump     = kit.getDump('Server')
 local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
-print( "Lua: Self IP: "..self_ip )
+print( "Self IP: "..self_ip )
 local host = enet.host_create(self_ip..":54321")
 
 --
@@ -109,7 +109,6 @@ end
 
 HAND.connect = function(e)
   print("Connect:", e.peer)
-  local pub = addr(e.peer)
   return true
 end
 

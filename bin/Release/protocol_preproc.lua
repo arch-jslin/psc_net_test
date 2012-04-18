@@ -28,7 +28,6 @@ RECV.URE = function(m)
 end
 
 RECV.GREETING = function(m)
-  dump('preproc')
   pmsg(m)
   net.gotGreeting(m.src)
 end
