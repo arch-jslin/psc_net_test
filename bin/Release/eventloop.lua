@@ -1,6 +1,6 @@
 local enet     = require 'enet'
 local socket   = require 'socket'
--- local gettime = require 'socket'.gettime
+local gettime = require 'socket'.gettime
 local sleep   = require 'socket'.sleep
 local ffi      = require 'ffi'
 local C        = ffi.C
@@ -190,6 +190,7 @@ net.tick = function(cc)
       elseif cc==52 then
         prep.chat_lobby(net.conn_matcher, string.random(6)..os.time())
       end
+
   end
 
   if (os.time() - net.tm > 0) then

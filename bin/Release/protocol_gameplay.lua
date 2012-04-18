@@ -1,5 +1,6 @@
 local enet   = require 'enet'
 local socket = require 'socket'
+local gettime = require 'socket'.gettime
 local ffi    = require 'ffi'
 local C      = ffi.C
 local kit    = require 'kit'
@@ -18,7 +19,8 @@ RECV.MOV = function(m)
   pmsg(m)
 end
 RECV.HIT = function(m)
-  pmsg(m)
+  --pmsg(m)
+  if m.y == 1 or m.y == 100 then print(gettime()) end
 end
 RECV.DIE = function(m)
   pmsg(m)

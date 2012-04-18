@@ -186,13 +186,11 @@ local function plist(pid)       -- list players in the room
 end
 
 local function disconnect(e)
-  room.lookup(e, function(pid)
-    room.del(pid, 'disconnect')
-  end)
+  room.lookup(e, room.del)
 end
 
 
-EXPORT.connect    = connect
+--EXPORT.connect    = connect
 EXPORT.disconnect = disconnect
 EXPORT.join    = join
 EXPORT.leave   = leave

@@ -98,6 +98,7 @@ local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 local HAND = {}
 HAND.receive = function(e)
   recv(e)
+  return true
 end
 
 HAND.disconnect = function(e)

@@ -75,28 +75,28 @@ local function send_iam(ip, port, peer)
 end
 local function plist(peer)
   local m = msg('PLS')
-  m.pid = game.pid
+  m.pid   = game.pid
   kit.send(m, peer)
 end
 local function poke_server(peer)
   local m = msg('POKE')
-  m.pid = game.pid
+  m.pid   = game.pid
   kit.send(m, peer)
 end
 local function chat_lobby(peer, txt)
   local m = msg('CHAT')
-  m.pid  = game.pid
-  m.txt  = txt
-  m.type = 'b' -- lobby
+  m.pid   = game.pid
+  m.txt   = txt
+  m.type  = 'b' -- lobby
   kit.send(m, peer)
 end
 
 
-EXPORT.recv = recv
 EXPORT.chat_lobby  = chat_lobby
 EXPORT.poke_server = poke_server
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
+EXPORT.recv  = recv
 EXPORT.plist = plist
 EXPORT.setup = function(n, g)
   net  = n
