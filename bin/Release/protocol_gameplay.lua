@@ -20,7 +20,7 @@ RECV.MOV = function(m)
 end
 RECV.HIT = function(m)
   --pmsg(m)
-  if m.y == 1 or m.y == 100 then print(gettime()) end
+  if m.y%10 == 0 then print(m.y, gettime()) end
 end
 RECV.DIE = function(m)
   pmsg(m)
