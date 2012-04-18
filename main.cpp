@@ -43,11 +43,11 @@ void start_lua(char ch)
     Lua::run_script(L, "eventloop.lua");
 
     if( ch == 's' ){
-        Lua::call(L, "init", 1); //client
-        Lua::call(L, "run"); //server
+        Lua::call(L, "init", 1); //server
+        Lua::call(L, "run");
     }else if(ch=='c'){
         Lua::call(L, "init", 2); //client
-        Lua::call(L, "run"); //server
+        Lua::call(L, "run");
     }
 
     printf("C: Returned back to C.\n");

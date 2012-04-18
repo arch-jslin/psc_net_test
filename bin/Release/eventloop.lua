@@ -40,7 +40,7 @@ game.hasPlayerList = function()
 end
 
 -- state controls
-Const = {
+local Const = {
   OFFLINE = 0,
   CONN_TO_LOBBY  = 1,
   IN_LOBBY       = 2,
@@ -59,18 +59,18 @@ net.gotoLobby = function()
   net.state = Const.CONN_TO_LOBBY
   return net.server(game.lobby_addr.ip, game.lobby_addr.port)
 end
-net.gotoLobbyReady   = function()
+net.gotoLobbyReady = function()
   dump('state=IN_LOBBY')
   net.state = Const.IN_LOBBY
 end
-net.gotoPlayer  = function()
+net.gotoPlayer = function()
   dump('state=CONN_TO_PLAYER')
   net.state = Const.CONN_TO_PLAYER
   if game.hasPlayerList() then
     net.farside(game.ppl[1].addr)
   end
 end
-net.gotoPlayerReady   = function()
+net.gotoPlayerReady = function()
   dump('state=READY_TO_PLAY')
   net.state = Const.READY_TO_PLAY
   net.working = true
@@ -81,8 +81,8 @@ net.gotoPlayerReady   = function()
   end
 
 end
-net.gotoGame    = function() net.state = Const.IN_GAME end
-net.gotoGiveup  = function() net.state = Const.GIVE_UP end
+net.gotoGame   = function() net.state = Const.IN_GAME end
+net.gotoGiveup = function() net.state = Const.GIVE_UP end
 
 -- connection management
 net.conn_server  = nil
@@ -113,6 +113,7 @@ net.init = function(ip, port)
 end
 
 net.server = function(ip, port)
+  dump('connect to server...')
   local function foo()
     net.conn_server = net.host:connect(ip..":"..port)
     -- net.conn_server = net.host:connect(IP_LOCAL..":54321")
@@ -143,7 +144,7 @@ end
 
 net.reset = function()
   if net.conn_farside then net.conn_farside:disconnect() end
-  if net.conn_server then net.conn_server:disconnect() end
+  if net.conn_server  then net.conn_server:disconnect() end
   net.greeting = 0
   net.working  = false
 end
@@ -221,7 +222,7 @@ net.proc_farside = function(e)
   end
 end
 
-net.proc_server= function(e)
+net.proc_server = function(e)
   if e.type == "receive" then
     prep.recv(e)
   elseif e.type == "connect" then
@@ -251,6 +252,10 @@ net.proc_server= function(e)
   end
 end
 
+
+
+-- Entry point
+-- global function so it can be called from C++
 function init(sc_flag)
   if sc_flag == SERVER then
     PORT = PORT_A
@@ -268,8 +273,6 @@ function init(sc_flag)
   play.setup(net, game)
 end
 
--- Entry point
--- global function so it can be called from C++
 function run()
 
   if not net.gotoLobby() then return false end
@@ -299,11 +302,6 @@ function run()
 
   end
 
-  net.reset()
-  dump('event loop ended.')
-end
-
-function stop()
   net.reset()
   dump('event loop ended.')
 end

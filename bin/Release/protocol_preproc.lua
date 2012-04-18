@@ -22,9 +22,9 @@ RECV.URE = function(m)
   table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
   game.ppl = m.ppl
 
-  net.gotoLobbyReady()     -- switch net state
+  net.gotoLobbyReady() -- switch net state
 
-  EXPORT.plist(m.src) -- test
+  EXPORT.plist(m.src)  -- test
 end
 
 RECV.GREETING = function(m)
@@ -89,7 +89,6 @@ local function chat_lobby(peer, txt)
   m.type  = 'b' -- lobby
   kit.send(m, peer)
 end
-
 
 EXPORT.chat_lobby  = chat_lobby
 EXPORT.poke_server = poke_server

@@ -5,8 +5,12 @@ local sleep  = require 'socket'.sleep
 local EXPORT = {}
 
 -- Constants
-local const = {
+local Const = {
   MAX_PLAYER_A_ROOM=2,
+  STATE={
+    IDLE='idle',
+    PLAYING='playing'
+  }
 }
 
 -- broadcast message
@@ -24,7 +28,7 @@ local function _player(peer)
 
   -- basic information
 	p.id = string.random(6, '%l%d')
-	p.status = 'idle'
+	p.status = Const.STATE.IDLE
 
   -- server-side management
 	p.tm_poke = os.time()  -- last time been poked
@@ -55,14 +59,13 @@ local function _room(c)  -- connection
   r.lookup = function(e, cb)
     table.foreach(players, function(k,v)
       if tostring(v.peer)==tostring(e.peer) then
-        dump('lalalalala')
         cb(k)
       end
     end)
   end
 
   r.add = function(peer)
-    if r.size() > const.MAX_PLAYER_A_ROOM then return nil end
+    if r.size() > Const.MAX_PLAYER_A_ROOM then return nil end
 
     local p = _player(peer)
     players[tostring(p.id)] = p
@@ -72,8 +75,7 @@ local function _room(c)  -- connection
 	r.del = function(pid, reason)
     players[pid].disconnect()
     players[pid] = nil
-    local msg = 'delete '..pid
-    if reason ~= nil then dump(msg..' Reason: '..reason) end
+    if reason ~= nil then dump('delete '..pid..' Reason: '..reason) end
 	end
 
 	r.tell = function(sid, pid, txt, type)
@@ -132,9 +134,7 @@ local function _room(c)  -- connection
 	return r
 end
 
-
 local room = _room()
-
 
 -- external interface
 local function join(addr, peer)  -- player want to join
@@ -151,11 +151,10 @@ local function say(pid, msg)     -- chat
   room.bcast(pid, msg)
 end
 
-local function status(pid, sta)  -- update plsyer's status
+local function status(pid, sta)  -- update player's status
   room.poke(pid)
   local p = room.get(pid)
   if p == nil then return false end
-
   p.status = sta
   return true
 end
@@ -188,7 +187,6 @@ end
 local function disconnect(e)
   room.lookup(e, room.del)
 end
-
 
 --EXPORT.connect    = connect
 EXPORT.disconnect = disconnect
