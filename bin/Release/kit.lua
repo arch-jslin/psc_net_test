@@ -169,5 +169,7 @@ EXPORT.addr_ext = function(tar)
 end
 
 
+EXPORT.str_test1 = string.random(1024)
+EXPORT.str_test2 = string.random(10240)
 
 return EXPORT

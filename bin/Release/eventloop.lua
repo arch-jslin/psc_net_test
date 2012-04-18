@@ -181,9 +181,9 @@ net.tick = function(cc)
         net.gotoPlayer()
       elseif cc==50 then
         if net.state >= Const.READY_TO_PLAY then
-          for i = 1, 200 do
+          for i = 1, 100 do
             play.hit(net.conn_farside, 0,i)
-            net.host:flush()
+            --net.host:flush()
             --sleep(0.001)
           end
         end

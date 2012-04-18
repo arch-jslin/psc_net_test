@@ -66,6 +66,7 @@ local function hit(peer, x,y)
   local m = msg('HIT')
   m.x = x
   m.y = y
+  m.msg = kit.str_test1
   m.tm = os.time()
   kit.send(m, peer)
 end
