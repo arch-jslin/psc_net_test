@@ -133,7 +133,8 @@ net.farside = function(info)
 end
 
 net.setup = function(tar)
-  net.reset()
+  net.greeting = 0
+  net.working  = false
 
   net.iam = {}
   net.iam.pri = {ip=IP_LOCAL, port=PORT}
