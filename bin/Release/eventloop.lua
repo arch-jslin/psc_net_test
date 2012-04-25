@@ -246,7 +246,6 @@ net.proc_server = function(e)
 
     if net.state == Const.CONN_TO_LOBBY then
       prep.send_iam(IP_LOCAL, PORT, e.peer)
-
     elseif net.state == Const.IN_LOBBY then
       prep.greeting(e.peer)
     end
@@ -259,8 +258,6 @@ net.proc_server = function(e)
     dump(e)
   end
 end
-
-
 
 -- Entry point
 -- global function so it can be called from C++
@@ -277,7 +274,6 @@ function init(sc_flag)
 
   prep.setup(net, game)
   play.setup(net, game)
-
 end
 
 function run()
