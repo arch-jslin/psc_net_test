@@ -172,6 +172,12 @@ local function pinfo(pid)        -- info about player
   return info
 end
 
+local function pnet(pid)        -- info about player
+  local p = room.get(pid)
+  if p == nil then return nil end
+  return p.peer
+end
+
 local function plist(pid)       -- list players in the room
   room.poke(pid)
   local ls = {}                 -- except the requester
@@ -189,6 +195,7 @@ local function disconnect(e)
 end
 
 --EXPORT.connect    = connect
+EXPORT.pnet  = pnet
 EXPORT.disconnect = disconnect
 EXPORT.join    = join
 EXPORT.leave   = leave

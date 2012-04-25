@@ -1,7 +1,7 @@
 local enet     = require 'enet'
 local socket   = require 'socket'
-local gettime = require 'socket'.gettime
-local sleep   = require 'socket'.sleep
+local gettime  = require 'socket'.gettime
+local sleep    = require 'socket'.sleep
 local ffi      = require 'ffi'
 local C        = ffi.C
 local kit      = require 'kit'
@@ -63,12 +63,10 @@ net.gotoLobbyReady = function()
   dump('state=IN_LOBBY')
   net.state = Const.IN_LOBBY
 end
-net.gotoPlayer = function()
+net.gotoPlayer = function(tar)
   dump('state=CONN_TO_PLAYER')
   net.state = Const.CONN_TO_PLAYER
-  if game.hasPlayerList() then
-    net.farside(game.ppl[1].addr)
-  end
+  if tar then net.farside(tar.addr) end
 end
 net.gotoPlayerReady = function()
   dump('state=READY_TO_PLAY')
@@ -79,10 +77,12 @@ net.gotoPlayerReady = function()
   else
     dump('Pose as '..'Client')
   end
-
 end
 net.gotoGame   = function() net.state = Const.IN_GAME end
 net.gotoGiveup = function() net.state = Const.GIVE_UP end
+
+net.isInLobby = function() return (net.state == Const.IN_LOBBY) end
+net.isPlayerReady = function() return (net.state == Const.READY_TO_PLAY) end
 
 -- connection management
 net.conn_server  = nil
@@ -165,8 +165,13 @@ net.waitGreeting = function()
 end
 
 net.gotGreeting = function(src)
-  net.gotoPlayerReady()
-  net.conn_farside = src
+  if not net.isPlayerReady() then
+    net.gotoPlayerReady()
+    net.conn_farside = src
+  else
+    dump('ignore duplicated player connection from '..tostring(src))
+  end
+
 end
 
 net.tick = function(cc)
@@ -175,9 +180,11 @@ net.tick = function(cc)
   if cc ~= 0 and cc ~= 65 and cc ~= nil then
 
       if cc == 49 then
-        net.gotoPlayer()
+        if game.hasPlayerList() then
+          prep.play_one(net.conn_server, game.ppl[1].pid)
+        end
       elseif cc==50 then
-        if net.state >= Const.READY_TO_PLAY then
+        if net.isPlayerReady() then
           for i = 1, 100 do
             play.hit(net.conn_farside, 0, i)
             --net.host:flush()
@@ -261,32 +268,27 @@ function init(sc_flag)
   if sc_flag == SERVER then
     PORT = PORT_A
     net.asServer = true
-    net.asClient = false
     net.init(IP_LOCAL, PORT)
   elseif sc_flag == CLIENT then
     PORT = PORT_B
     net.asServer = false
-    net.asClient = true
     net.init(IP_LOCAL, PORT)
   end
 
   prep.setup(net, game)
   play.setup(net, game)
+
 end
 
 function run()
 
   if not net.gotoLobby() then return false end
 
-  local busy = false
-
   while not C.check_quit() do
 
     local c = C.poll_from_C()      -- commands from c
 
-    if busy then t = 1 else t = 100 end
-
-    local e = net.host:service(t)  -- network event
+    local e = net.host:service(1)  -- network event
 
     if e then
       if net.state <= Const.IN_LOBBY then
@@ -294,9 +296,6 @@ function run()
       else
         net.proc_farside(e)
       end
-      busy = true
-    else
-      busy = false
     end
 
     net.tick(c)

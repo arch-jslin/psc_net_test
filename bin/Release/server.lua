@@ -33,9 +33,33 @@ local function PLS_R(ppl, code)
   return m
 end
 
+
+local function PLAY_W(pinfo, code)
+  --收到開始互連對方
+  local m = msg('PLAY_W', code)
+  m.tar = pinfo
+  dump(pinfo.nick)
+  return m
+end
+
 --
 -- recv functions
 --
+local function PLAY_1(m)
+  -- 收到要和別人玩的請求
+  local pid1 = m.pid_me
+  local pid2 = m.pid_tar
+  if lobby.contain(pid1) and lobby.contain(pid2) then
+    local m_to_p1 = PLAY_W(lobby.pinfo(pid2), 0)
+    local m_to_p2 = PLAY_W(lobby.pinfo(pid1), 0)
+    send(m_to_p1, lobby.pnet(pid1))
+    send(m_to_p2, lobby.pnet(pid2))
+  else
+    local m_to_p1 = PLAY_W(pid2, 1) -- error code:1
+    send(m_to_p1, m.src)
+  end
+end
+
 local function IAM(m)
   dump(m.T)
   local peer = m.src
@@ -89,6 +113,7 @@ RECV.IAM  = IAM  -- register
 RECV.PLS  = PLS  -- ask for online player list
 RECV.POKE = POKE
 RECV.CHAT = CHAT
+RECV.PLAY_1 = PLAY_1
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
