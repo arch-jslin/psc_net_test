@@ -274,30 +274,24 @@ function init(sc_flag)
 
   prep.setup(net, game)
   play.setup(net, game)
-end
-
-function run()
 
   if not net.gotoLobby() then return false end
+  return true
+end
 
-  while not C.check_quit() do
-
-    local c = C.poll_from_C()      -- commands from c
-
-    local e = net.host:service(1)  -- network event
-
-    if e then
-      if net.state <= Const.IN_LOBBY then
-        net.proc_server(e)
-      else
-        net.proc_farside(e)
-      end
+function run(c)
+  local e = net.host:service(0)  -- network event
+  if e then
+    if net.state <= Const.IN_LOBBY then
+      net.proc_server(e)
+    else
+      net.proc_farside(e)
     end
-
-    net.tick(c)
-
   end
+  net.tick(c)
+end
 
+function dtor()
   net.reset()
   dump('event loop ended.')
 end
