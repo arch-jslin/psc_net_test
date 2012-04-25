@@ -12,7 +12,7 @@ local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Self IP: "..self_ip )
-local host = enet.host_create(self_ip..":54322")
+local host = enet.host_create(self_ip..":54321")
 
 --
 -- outgoing messages
