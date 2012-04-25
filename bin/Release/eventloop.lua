@@ -115,8 +115,8 @@ end
 net.server = function(ip, port)
   dump('connect to server...')
   local function foo()
-    -- net.conn_server = net.host:connect(ip..":"..port)
-    net.conn_server = net.host:connect(IP_LOCAL..":54321")
+    net.conn_server = net.host:connect(ip..":"..port)
+    -- net.conn_server = net.host:connect(IP_LOCAL..":54321")
   end
 
   local ok, err = pcall(foo)
