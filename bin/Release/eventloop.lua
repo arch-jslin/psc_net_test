@@ -204,7 +204,7 @@ net.tick = function(cc)
       net.waitGreeting()
     end
 
-    if net.tm % 90 == 0 and net.state == Const.IN_LOBBY then
+    if net.tm % 10 == 0 and net.state == Const.IN_LOBBY then
       play.plist(net.conn_server)
     end
 
