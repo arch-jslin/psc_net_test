@@ -5,7 +5,7 @@
 #include <deque>
 #include <cstdio>
 #include <cstdlib>
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/tr1/functional.hpp>
 #include "lua_utils.hpp"
 
