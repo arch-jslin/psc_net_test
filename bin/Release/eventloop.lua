@@ -33,7 +33,7 @@ local CLIENT=2
 
 local net  = {}
 local game = {}
-game.lobby_addr = {ip="173.255.254.41", port="54322"}
+game.lobby_addr = {ip="173.255.254.41", port="54321"}
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil and game.ppl[1] ~= nil ))
   return ( game.ppl ~= nil and game.ppl[1] ~= nil )
