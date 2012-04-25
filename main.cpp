@@ -53,9 +53,9 @@ void start_lua(char ch)
     }
 }
 
-void process_lua(int cmd)
+void process_lua()
 {
-    Lua::call(L, "run", cmd);
+    Lua::call(L, "run");
 }
 
 void end_lua()
@@ -138,13 +138,7 @@ int main()
                     MQ.push_back(CH);
                 }
             }
-            if( !MQ.empty() ) {
-                int front = MQ.front();
-                MQ.pop_front();
-                process_lua(front);
-            } else {
-                process_lua(0);
-            }
+            process_lua();
         }
         CH = 0; //reset CH here
 #if defined(WIN32) || defined(__WIN32__)

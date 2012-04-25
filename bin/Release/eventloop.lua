@@ -174,27 +174,28 @@ net.gotGreeting = function(src)
 
 end
 
-net.tick = function(cc)
+net.tick = function()
 
   -- commands from terminal
-  if cc ~= 0 and cc ~= 65 and cc ~= nil then
+  local cc = C.poll_from_C()
+  while cc ~= 0 and cc ~= 65 and cc ~= nil do
 
-      if cc == 49 then
-        if game.hasPlayerList() then
-          prep.play_one(net.conn_server, game.ppl[1].pid)
-        end
-      elseif cc==50 then
-        if net.isPlayerReady() then
-          for i = 1, 100 do
-            play.hit(net.conn_farside, 0, i)
-            --net.host:flush()
-          end
-        end
-      elseif cc==51 then
-      elseif cc==52 then
-        prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+    if cc == 49 then
+      if game.hasPlayerList() then
+        prep.play_one(net.conn_server, game.ppl[1].pid)
       end
-
+    elseif cc==50 then
+      if net.isPlayerReady() then
+        for i = 1, 100 do
+          play.hit(net.conn_farside, 0, i)
+          --net.host:flush()
+        end
+      end
+    elseif cc==51 then
+    elseif cc==52 then
+      prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+    end
+    cc = C.poll_from_C()
   end
 
   if (os.time() - net.tm > 0) then
@@ -279,16 +280,17 @@ function init(sc_flag)
   return true
 end
 
-function run(c)
-  local e = net.host:service(0)  -- network event
-  if e then
+function run()
+  local e = net.host:service(0) -- network event
+  while e do
     if net.state <= Const.IN_LOBBY then
       net.proc_server(e)
     else
       net.proc_farside(e)
     end
+    e = net.host:service(0)  
   end
-  net.tick(c)
+  net.tick()
 end
 
 function dtor()
