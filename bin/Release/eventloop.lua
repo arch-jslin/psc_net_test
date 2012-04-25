@@ -33,7 +33,7 @@ local CLIENT=2
 
 local net  = {}
 local game = {}
-game.lobby_addr = {ip="173.255.254.41", port="54321"}
+game.lobby_addr = {ip="173.255.254.41", port="54322"}
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil and game.ppl[1] ~= nil ))
   return ( game.ppl ~= nil and game.ppl[1] ~= nil )
@@ -115,8 +115,8 @@ end
 net.server = function(ip, port)
   dump('connect to server...')
   local function foo()
-    net.conn_server = net.host:connect(ip..":"..port)
-    -- net.conn_server = net.host:connect(IP_LOCAL..":54321")
+    -- net.conn_server = net.host:connect(ip..":"..port)
+    net.conn_server = net.host:connect(IP_LOCAL..":54321")
   end
 
   local ok, err = pcall(foo)

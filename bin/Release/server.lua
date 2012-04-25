@@ -12,7 +12,7 @@ local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Self IP: "..self_ip )
-local host = enet.host_create(self_ip..":54321")
+local host = enet.host_create(self_ip..":54322")
 
 --
 -- outgoing messages
@@ -52,8 +52,8 @@ local function PLAY_1(m)
   if lobby.contain(pid1) and lobby.contain(pid2) then
     local m_to_p1 = PLAY_W(lobby.pinfo(pid2), 0)
     local m_to_p2 = PLAY_W(lobby.pinfo(pid1), 0)
-    send(m_to_p1, lobby.pnet(pid1))
-    send(m_to_p2, lobby.pnet(pid2))
+    send(m_to_p1, lobby.peer(pid1))
+    send(m_to_p2, lobby.peer(pid2))
   else
     local m_to_p1 = PLAY_W(pid2, 1) -- error code:1
     send(m_to_p1, m.src)
