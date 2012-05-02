@@ -15,10 +15,10 @@
 #define APIEXPORT
 #endif
 
-std::deque<int>   MQ;
-lua_State*        L = 0;
-bool              LUA_QUIT = false;
-int               CH = 0;
+std::deque<std::string> MQ;
+lua_State*              L = 0;
+bool                    LUA_QUIT = false;
+int                     CH = 0;
 
 enum NetState{
     N_DEFAULT,
@@ -61,7 +61,7 @@ void process_lua()
 void end_lua()
 {
     Lua::call(L, "dtor");
-    printf("C: main loop ended.\n");
+    printf("C: Lua cleaned up.\n");
 
     MQ.clear();
 
@@ -73,28 +73,32 @@ void end_lua()
 }
 
 extern "C" {
-    APIEXPORT void on_connected() {
-        printf("Lua->C: farside connected.\n");
+    APIEXPORT void on_connected(char const*) {
+        printf("Lua->C: server connected.\n");
         N_STATE = N_CONNECTED_SERV;
     }
 
-    APIEXPORT void on_matched() {
+    APIEXPORT void on_matched(char const*) {
         printf("Lua->C: farside matched.\n");
         N_STATE = N_MATCHED;
     }
 
-    APIEXPORT void on_disconnected() {
-        printf("Lua->C: farside disconnected.\n");
+    APIEXPORT void on_disconnected(char const*) {
+        printf("Lua->C: disconnected.\n");
         N_STATE = N_DEFAULT;
     }
 
-    APIEXPORT int poll_from_C() {
+    APIEXPORT void on_received(char const*) {
+        printf("Lua->C: received something from farside.\n");
+    }
+
+    APIEXPORT char const* poll_from_C() {
         if( !MQ.empty() ) {
-            int front = MQ.front();
+            std::string const& front = MQ.front();
             MQ.pop_front();
-            return front;
+            return front.c_str();
         }
-        return 0;
+        return "";
     }
 
     APIEXPORT bool check_quit() {
@@ -133,9 +137,10 @@ int main()
                 end_lua();
                 continue;
             }
-            else if( CH >= '1' && CH <= '4' ) {
-                if( N_STATE == N_MATCHED ) {
-                    MQ.push_back(CH);
+            else if( CH == '1' ) {
+                if( N_STATE >= N_CONNECTED_SERV ) {
+                    MQ.push_back("1");
+                    //mockup message to make lua initiate client matching
                 }
             }
             process_lua();
