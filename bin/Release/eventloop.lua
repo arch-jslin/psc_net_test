@@ -1,9 +1,9 @@
---[[
+--[=[
 local basepath = require 'rc/script/helper'.basepath
 package.path = basepath()..[[rc/script/net/?.lua;]]..package.path
 package.cpath= basepath()..[[rc/script/net/?.dll;]]..package.cpath
 -- above lines added for further merges with cubeat-core 
---]]
+--]=]
 
 local enet     = require 'enet'
 local socket   = require 'socket'
@@ -23,10 +23,11 @@ local prep     = require 'protocol_preproc'
 local play     = require 'protocol_gameplay'
 
 ffi.cdef[[
-void on_connected();
-void on_matched();
-void on_disconnected();
-int  poll_from_C();
+void on_connected(char const*);
+void on_matched(char const*);
+void on_received(char const*);
+void on_disconnected(char const*);
+char const* poll_from_C();
 bool check_quit();
 ]]
 
