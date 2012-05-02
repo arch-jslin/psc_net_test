@@ -1,3 +1,10 @@
+--[[
+local basepath = require 'rc/script/helper'.basepath
+package.path = basepath()..[[rc/script/net/?.lua;]]..package.path
+package.cpath= basepath()..[[rc/script/net/?.dll;]]..package.cpath
+-- above lines added for further merges with cubeat-core 
+--]]
+
 local enet     = require 'enet'
 local socket   = require 'socket'
 local gettime  = require 'socket'.gettime
@@ -71,7 +78,9 @@ end
 net.gotoPlayerReady = function()
   dump('state=READY_TO_PLAY')
   net.state = Const.READY_TO_PLAY
-  net.working = true
+  
+  C.on_matched('') -- only call matched when Player is READY_TO_PLAY
+  
   if net.asServer == true then
     dump('Pose as '..'Server')
   else
@@ -88,7 +97,6 @@ net.isPlayerReady = function() return (net.state == Const.READY_TO_PLAY) end
 net.conn_server  = nil
 net.conn_farside = nil
 net.host     = nil
-net.working  = false
 net.state    = Const.OFFLINE
 net.tar      = nil  -- farside information
 net.tm       = 0
@@ -134,7 +142,7 @@ end
 
 net.setup = function(tar)
   net.greeting = 0
-  net.working  = false
+  -- net.state    = Const.OFFLINE
 
   net.iam = {}
   net.iam.pri = {ip=IP_LOCAL, port=PORT}
@@ -147,7 +155,7 @@ net.reset = function()
   if net.conn_farside then net.conn_farside:disconnect() end
   if net.conn_server  then net.conn_server:disconnect() end
   net.greeting = 0
-  net.working  = false
+  net.state    = Const.OFFLINE
 end
 
 net.waitGreeting = function()
@@ -174,28 +182,44 @@ net.gotGreeting = function(src)
 
 end
 
+local function old_tick_poll_core(cc)
+  -- if cc == 49 then
+    -- if game.hasPlayerList() then
+      -- prep.play_one(net.conn_server, game.ppl[1].pid)
+    -- end
+  -- elseif cc==50 then
+    -- if net.isPlayerReady() then
+      -- for i = 1, 100 do
+        -- play.hit(net.conn_farside, 0, i)
+        -- --net.host:flush()
+      -- end
+    -- end
+  -- elseif cc==51 then
+  -- elseif cc==52 then
+    -- prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+  -- end
+end
+
 net.tick = function()
 
   -- commands from terminal
-  local cc = C.poll_from_C()
-  while cc ~= 0 and cc ~= 65 and cc ~= nil do
-
-    if cc == 49 then
-      if game.hasPlayerList() then
-        prep.play_one(net.conn_server, game.ppl[1].pid)
-      end
-    elseif cc==50 then
-      if net.isPlayerReady() then
-        for i = 1, 100 do
-          play.hit(net.conn_farside, 0, i)
-          --net.host:flush()
+  local cc = ffi.string(C.poll_from_C())
+  while cc and cc ~= '' do 
+    -- tick_poll_core(cc)
+    if not net.isPlayerReady() then 
+      if cc == '1' then
+        if game.hasPlayerList() then
+          prep.play_one(net.conn_server, game.ppl[1].pid)
         end
       end
-    elseif cc==51 then
-    elseif cc==52 then
-      prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+    else
+      local getT = loadstring(cc)
+      local t = getT()
+      t.tm = os.time() -- appenddum
+      -- play.move(net.conn_farside, cc, 100)
+      kit.send(t, net.conn_farside)
     end
-    cc = C.poll_from_C()
+    cc = ffi.string(C.poll_from_C())
   end
 
   if (os.time() - net.tm > 0) then
@@ -208,9 +232,9 @@ net.tick = function()
     if net.tm % 10 == 0 and net.state == Const.IN_LOBBY then
       play.plist(net.conn_server)
     end
-
+    
     -- keep-alive
-    if net.tm % 10 == 0 and net.working then
+    if net.tm % 10 == 0 and net.state >= Const.IN_LOBBY then
       dump('poke server. tm='..net.tm..' state='..net.state)
       prep.poke_server(net.conn_server)
     end
@@ -224,8 +248,8 @@ net.proc_farside = function(e)
     print("Lua: farside connected, send greeting:", e.peer)
     prep.greeting(e.peer)
   elseif e.type == "disconnect" then
-    dump("disconnected:"..tostring(e.peer))
-    net.working = false
+    dump("Lua: disconnected to farside: "..tostring(e.peer))
+    net.state = Const.OFFLINE
   else
     dump(e)
   end
@@ -237,24 +261,16 @@ net.proc_server = function(e)
   elseif e.type == "connect" then
     print("Lua: server connected:", e.peer)
 
-    if not net.conn_server then
-      net.conn_server = e.peer
-      C.on_connected()
-    end
-
-    C.on_matched()
-    net.working = true
+    C.on_connected('')
 
     if net.state == Const.CONN_TO_LOBBY then
       prep.send_iam(IP_LOCAL, PORT, e.peer)
-    elseif net.state == Const.IN_LOBBY then
-      prep.greeting(e.peer)
     end
 
   elseif e.type == "disconnect" then
-    print("Lua: disconnected:", e.peer)
-    net.working = false
-    C.on_disconnected()
+    print("Lua: disconnected to server: ", e.peer)
+    net.state = Const.OFFLINE
+    C.on_disconnected('')
   else
     dump(e)
   end
@@ -276,7 +292,11 @@ function init(sc_flag)
   prep.setup(net, game)
   play.setup(net, game)
 
-  if not net.gotoLobby() then return false end
+  if not net.gotoLobby() then 
+    print('Lua: host:connect failed')
+    return false 
+  end
+  print('Lua: host:connect succeed, but not yet acked.')
   return true
 end
 
