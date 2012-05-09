@@ -2,7 +2,7 @@
 local basepath = require 'rc/script/helper'.basepath
 package.path = basepath()..[[rc/script/net/?.lua;]]..package.path
 package.cpath= basepath()..[[rc/script/net/?.dll;]]..package.cpath
--- above lines added for further merges with cubeat-core 
+-- above lines added for further merges with cubeat-core
 --]=]
 
 local enet     = require 'enet'
@@ -15,7 +15,7 @@ local kit      = require 'kit'
 local addr     = kit.addr
 local addr_cmp = kit.addr_cmp
 local addr_str = kit.addr_str
-local msg      = kit.msg
+local msg      = kit.tmg
 local pmsg     = kit.pmsg
 local dump     = kit.getDump('Lua')
 local ns       = require 'net_strategy'
@@ -51,10 +51,14 @@ end
 local Const = {
   OFFLINE = 0,
   CONN_TO_LOBBY  = 1,
-  IN_LOBBY       = 2,
+  LOBBY_READY    = 2,
+
   CONN_TO_PLAYER = 3,
-  READY_TO_PLAY  = 4,
-  IN_GAME        = 5,
+  PLAYER_READY   = 4,
+
+  SYNCING        = 5,
+
+  GAME_READY     = 6,
   GIVE_UP = 9
 }
 net.gotoOffline = function()
@@ -62,37 +66,70 @@ net.gotoOffline = function()
   net.state = Const.OFFLINE
   net.reset()
 end
+
 net.gotoLobby = function()
   dump('state=CONN_TO_LOBBY')
   net.state = Const.CONN_TO_LOBBY
   return net.server(game.lobby_addr.ip, game.lobby_addr.port)
 end
+
 net.gotoLobbyReady = function()
-  dump('state=IN_LOBBY')
-  net.state = Const.IN_LOBBY
+  dump('state=LOBBY_READY')
+  net.state = Const.LOBBY_READY
 end
+
 net.gotoPlayer = function(tar)
   dump('state=CONN_TO_PLAYER')
   net.state = Const.CONN_TO_PLAYER
   if tar then net.farside(tar.addr) end
 end
+
 net.gotoPlayerReady = function()
-  dump('state=READY_TO_PLAY')
-  net.state = Const.READY_TO_PLAY
-  
-  C.on_matched('') -- only call matched when Player is READY_TO_PLAY
-  
+  dump('state=PLAYER_READY')
+  net.state = Const.PLAYER_READY
+
   if net.asServer == true then
     dump('Pose as '..'Server')
   else
     dump('Pose as '..'Client')
   end
+
+  -- call gotoSync
+  net.gotoSync()
+
+  -- TODO move C.on_matched to GAME_READY ?
+  C.on_matched('') -- only call matched when Player is PLAYER_READY
 end
-net.gotoGame   = function() net.state = Const.IN_GAME end
+
+net.gotoSync = function()
+  -- begin
+  net.state = Const.SYNCING
+
+  local function _get_sync_func()
+    local num = 30
+    local cnt = 0
+    return function()
+      if cnt >= num then
+        return
+      elseif cnt == 0 then
+        play.sync(net.conn_farside, 0, net.tm) -- send first sync
+      elseif cnt == (num-1) then
+        play.sync(net.conn_farside, 2, net.tm) -- send last sync
+      else
+        play.sync(net.conn_farside, 1, net.tm) -- send sync
+      end
+      cnt = cnt + 1
+    end
+  end
+
+  net.sync = _get_sync_func()
+end
+
+net.gotoGameReady = function() net.state = Const.GAME_READY end
 net.gotoGiveup = function() net.state = Const.GIVE_UP end
 
-net.isInLobby = function() return (net.state == Const.IN_LOBBY) end
-net.isPlayerReady = function() return (net.state == Const.READY_TO_PLAY) end
+net.isInLobby = function() return (net.state == Const.LOBBY_READY) end
+net.isPlayerReady = function() return (net.state == Const.PLAYER_READY) end
 
 -- connection management
 net.conn_server  = nil
@@ -101,6 +138,8 @@ net.host     = nil
 net.state    = Const.OFFLINE
 net.tar      = nil  -- farside information
 net.tm       = 0
+net.tm       = 0
+net.num_tick = 0
 net.greeting = 0
 
 function net:tarPriAddr(i)
@@ -205,9 +244,9 @@ net.tick = function()
 
   -- commands from terminal
   local cc = ffi.string(C.poll_from_C())
-  while cc and cc ~= '' do 
+  while cc and cc ~= '' do
     -- tick_poll_core(cc)
-    if not net.isPlayerReady() then 
+    if not net.isPlayerReady() then
       if cc == '1' then
         if game.hasPlayerList() then
           prep.play_one(net.conn_server, game.ppl[1].pid)
@@ -217,26 +256,41 @@ net.tick = function()
       local getT = loadstring(cc)
       local t = getT()
       t.tm = os.time() -- appenddum
-      -- play.move(net.conn_farside, cc, 100)
       kit.send(t, net.conn_farside)
     end
     cc = ffi.string(C.poll_from_C())
   end
 
-  if (os.time() - net.tm > 0) then
-    net.tm = os.time()
+  if math.floor(gettime()*1000) > net.tm then
+    net.num_tick = net.num_tick + 1
+    net.tm = math.floor(gettime()*1000)
+  end
+
+  -- every 100ms
+  if net.num_tick % 100 == 0 then
+
+    -- keep sending sync msg
+    if net.state == Const.SYNCING or net.state==Const.GAME_READY then
+      net.sync()
+    end
+
+  end
+
+  -- every second
+  if net.num_tick % 1000 == 0 then
+    -- print(math.floor(gettime()), '  =  ', os.time())
 
     if net.state == Const.CONN_TO_PLAYER then
       net.waitGreeting()
     end
 
-    if net.tm % 10 == 0 and net.state == Const.IN_LOBBY then
+    if net.num_tick % 10000 == 0 and net.state == Const.LOBBY_READY then
       play.plist(net.conn_server)
     end
-    
+
     -- keep-alive
-    if net.tm % 10 == 0 and net.state >= Const.IN_LOBBY then
-      dump('poke server. tm='..net.tm..' state='..net.state)
+    if net.num_tick % 1000 == 0 and net.state >= Const.LOBBY_READY then
+      dump('poke server. tm='..(net.num_tick/1000)..' state='..net.state)
       prep.poke_server(net.conn_server)
     end
   end
@@ -293,9 +347,9 @@ function init(sc_flag)
   prep.setup(net, game)
   play.setup(net, game)
 
-  if not net.gotoLobby() then 
+  if not net.gotoLobby() then
     print('Lua: host:connect failed')
-    return false 
+    return false
   end
   print('Lua: host:connect succeed, but not yet acked.')
   return true
@@ -304,12 +358,12 @@ end
 function run()
   local e = net.host:service(0) -- network event
   while e do
-    if net.state <= Const.IN_LOBBY then
+    if net.state <= Const.LOBBY_READY then
       net.proc_server(e)
     else
       net.proc_farside(e)
     end
-    e = net.host:service(0)  
+    e = net.host:service(0)
   end
   net.tick()
 end
