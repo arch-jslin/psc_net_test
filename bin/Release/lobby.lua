@@ -128,7 +128,7 @@ local function _room(c)  -- connection
 
   r.is_zombie = function(pid)
     local tmp = r.get(pid)
-		return ( (now - r.get(pid).tm_poke) > 30 ) -- 30 secs
+		return ( (now - r.get(pid).tm_poke) > 5 ) -- 5 secs
 	end
 
 	return r

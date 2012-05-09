@@ -2,7 +2,7 @@
 local basepath = require 'rc/script/helper'.basepath
 package.path = basepath()..[[rc/script/net/?.lua;]]..package.path
 package.cpath= basepath()..[[rc/script/net/?.dll;]]..package.cpath
--- above lines added for further merges with cubeat-core 
+-- above lines added for further merges with cubeat-core
 --]=]
 
 local enet     = require 'enet'
@@ -79,9 +79,9 @@ end
 net.gotoPlayerReady = function()
   dump('state=READY_TO_PLAY')
   net.state = Const.READY_TO_PLAY
-  
+
   C.on_matched('') -- only call matched when Player is READY_TO_PLAY
-  
+
   if net.asServer == true then
     dump('Pose as '..'Server')
   else
@@ -205,9 +205,9 @@ net.tick = function()
 
   -- commands from terminal
   local cc = ffi.string(C.poll_from_C())
-  while cc and cc ~= '' do 
+  while cc and cc ~= '' do
     -- tick_poll_core(cc)
-    if not net.isPlayerReady() then 
+    if not net.isPlayerReady() then
       if cc == '1' then
         if game.hasPlayerList() then
           prep.play_one(net.conn_server, game.ppl[1].pid)
@@ -233,10 +233,10 @@ net.tick = function()
     if net.tm % 10 == 0 and net.state == Const.IN_LOBBY then
       play.plist(net.conn_server)
     end
-    
+
     -- keep-alive
-    if net.tm % 10 == 0 and net.state >= Const.IN_LOBBY then
-      dump('poke server. tm='..net.tm..' state='..net.state)
+    if net.tm % 1 == 0 and net.state >= Const.IN_LOBBY then
+      -- dump('poke server. tm='..net.tm..' state='..net.state)
       prep.poke_server(net.conn_server)
     end
   end
@@ -293,9 +293,9 @@ function init(sc_flag)
   prep.setup(net, game)
   play.setup(net, game)
 
-  if not net.gotoLobby() then 
+  if not net.gotoLobby() then
     print('Lua: host:connect failed')
-    return false 
+    return false
   end
   print('Lua: host:connect succeed, but not yet acked.')
   return true
@@ -309,7 +309,7 @@ function run()
     else
       net.proc_farside(e)
     end
-    e = net.host:service(0)  
+    e = net.host:service(0)
   end
   net.tick()
 end
