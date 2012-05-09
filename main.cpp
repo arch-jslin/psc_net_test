@@ -88,8 +88,8 @@ extern "C" {
         N_STATE = N_DEFAULT;
     }
 
-    APIEXPORT void on_received(char const*) {
-        printf("Lua->C: received something from farside.\n");
+    APIEXPORT void on_received(char const* str) {
+        printf("Lua->C: received: %s\n", str);
     }
 
     APIEXPORT char const* poll_from_C() {
@@ -141,6 +141,12 @@ int main()
                 if( N_STATE >= N_CONNECTED_SERV ) {
                     MQ.push_back("1");
                     //mockup message to make lua initiate client matching
+                }
+            }
+            else if( CH == '2' ) {
+                if( N_STATE >= N_MATCHED ) {
+                    MQ.push_back("return {T='MOV', x=0, y=0}");
+                    //mockup message to test gameplay protocol.
                 }
             }
             process_lua();
