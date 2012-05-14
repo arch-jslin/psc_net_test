@@ -77,7 +77,7 @@ local function IAM(m)
 end
 
 local function PLS(m)
-  dump(m.T)
+  --dump(m.T)
   local peer = m.src
   local pid  = m.pid
   local ret = nil
@@ -92,14 +92,14 @@ local function PLS(m)
 end
 
 local function POKE(m)
-  dump(m.T)
+  --dump(m.T)
   local peer = m.src
   local pid  = m.pid
   lobby.poke(pid)
 end
 
 local function CHAT(m)
-  dump(m.T)
+  --dump(m.T)
   local sid  = m.pid
   local txt  = m.txt
   local type = m.type
