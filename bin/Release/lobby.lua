@@ -177,7 +177,7 @@ local function peer(pid)        -- info about player
   if p == nil then return nil end
   return p.peer
 end
-
+--
 local function plist(pid)       -- list players in the room
   room.poke(pid)
   local ls = {}                 -- except the requester

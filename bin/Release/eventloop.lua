@@ -280,15 +280,18 @@ end
 -- Entry point
 -- global function so it can be called from C++
 function init(sc_flag)
-  if sc_flag == SERVER then
-    PORT = PORT_A
-    net.asServer = true
-    net.init(IP_LOCAL, PORT)
-  elseif sc_flag == CLIENT then
-    PORT = PORT_B
-    net.asServer = false
-    net.init(IP_LOCAL, PORT)
-  end
+  -- if sc_flag == SERVER then
+  --   PORT = PORT_A
+  --   net.asServer = true
+  --   net.init(IP_LOCAL, PORT)
+  -- elseif sc_flag == CLIENT then
+  --   PORT = PORT_B
+  --   net.asServer = false
+  --   net.init(IP_LOCAL, PORT)
+  -- end
+  PORT = sc_flag
+  net.asServer = (sc_flag%2==0)
+  net.init(IP_LOCAL, PORT)
 
   prep.setup(net, game)
   play.setup(net, game)
@@ -313,7 +316,7 @@ function run()
   end
   net.tick()
 end
-
+--
 function dtor()
   net.reset()
   dump('event loop ended.')
