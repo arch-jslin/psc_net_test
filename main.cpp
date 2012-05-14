@@ -3,6 +3,7 @@
 #endif //WIN32
 
 #include <deque>
+#include <ctime>
 #include <cstdio>
 #include <cstdlib>
 #include <boost/thread/thread.hpp>
@@ -34,19 +35,24 @@ NetState  N_STATE = N_DEFAULT;
 GameState G_STATE = G_DEFAULT;
 
 void end_lua();
-void start_lua(char ch)
+void start_lua(int port)
 {
     L = luaL_newstate();
     luaL_openlibs(L);
     Lua::run_script(L, "eventloop.lua");
 
     bool get_lobby = false;
+    get_lobby = Lua::call_R<bool>(L, "init", port);
+
+    /*
     if( ch == 's' ) {
-        get_lobby = Lua::call_R<bool>(L, "init", 1); //server
+        get_lobby = Lua::call_R<bool>(L, "init", 2501); //server
     }
     else {
-        get_lobby = Lua::call_R<bool>(L, "init", 2); //client
+        get_lobby = Lua::call_R<bool>(L, "init", 2502); //client
     }
+    */
+
     if ( !get_lobby ) {
         printf("C: notified by lua that connecting to lobby server failed.\n");
         end_lua();
@@ -120,15 +126,24 @@ void input_loop()
     }
 }
 
-int main()
+int main(int argc, char*argv[])
 {
     using std::tr1::bind;
     boost::thread  thInput( input_loop );
 
+    int port = 0;
+    if (argc == 2)
+      port = atoi(argv[1]);
+    else
+      port = 2000+ ((int)time(NULL) % 1000);
+
+    printf("Port=%d", port);
+    start_lua(port);
+
     while ( CH != 3 ) { //ctrl-c
         if( !L ) {
             if( CH == 's' || CH == 'c' ) {
-                start_lua(CH);
+                //start_lua(CH);
             }
         }
         else {
