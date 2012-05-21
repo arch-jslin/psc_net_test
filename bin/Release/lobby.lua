@@ -54,8 +54,6 @@ local function _room(c)  -- connection
 
   r.num_ppl = function() return num_players end
 
-  r.size = function() return table.getn(players) end
-
   r.get = function(pid)
     return players[pid]
   end
@@ -68,7 +66,7 @@ local function _room(c)  -- connection
   end
 
   r.add = function(peer)
-    if r.size() > Const.MAX_PLAYER_A_ROOM then return nil end
+    if r.num_ppl() > Const.MAX_PLAYER_A_ROOM then return nil end
 
     local p = _player(peer)
     players[tostring(p.id)] = p
@@ -200,10 +198,6 @@ local function num_ppl()
   return room.num_ppl()
 end
 
-local function size()
-  return room.size()
-end
-
 local function disconnect(e)
   room.lookup(e, room.del)
 end
@@ -217,7 +211,6 @@ EXPORT.say     = say
 EXPORT.status  = status
 EXPORT.list_players   = list_players
 EXPORT.pinfo   = pinfo
-EXPORT.size    = size
 EXPORT.num_ppl = num_ppl
 EXPORT.bcast   = function(sid,txt) room.bcast(sid,txt) end
 EXPORT.contain = function(pid) return (room.get(pid) ~= nil) end
