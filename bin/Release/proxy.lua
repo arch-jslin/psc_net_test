@@ -80,7 +80,9 @@ local function PS_POKE_R(m)
   local sta = m.status
   net.servers[key].num_ppl = num
   net.servers[key].status = sta
-  dump(net.servers)
+
+  dump(m.T)
+  dump(net.servers[key])
 end
 local function CLI_LS_LOB(m)
   -- game client ask for a live server
@@ -103,9 +105,7 @@ local RECV = {}
 RECV.PS_POKE_R = PS_POKE_R
 RECV.CLI_LS_LOB = CLI_LS_LOB
 
-local recv = require 'kit'.getRecv(function (m)
-  dump(m)
-  RECV[m.T](m) end)
+local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
 net.tm = 0
 net.num_tick = 0

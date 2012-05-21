@@ -119,7 +119,7 @@ local function PS_POKE(m)
   -- from proxy
   dump(m)
 
-  local num = lobby.size()
+  local num = lobby.num_ppl()
   local sta = nil
   if num<100 then
     sta = 'green'
@@ -127,6 +127,7 @@ local function PS_POKE(m)
     sta = 'red'
   end
 
+  dump(num)
   send(PS_POKE_R(num, sta), m.src)
 
 end

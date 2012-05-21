@@ -50,6 +50,9 @@ local function _room(c)  -- connection
 	local players = {}
   local now = os.time()
   local conn = c
+  local num_players = 0
+
+  r.num_ppl = function() return num_players end
 
   r.size = function() return table.getn(players) end
 
@@ -121,8 +124,10 @@ local function _room(c)  -- connection
       cnt = cnt + 1
     end)
 
+    num_players = cnt
+
     if now % 10 == 0 then
-      dump('#players online: '..cnt)
+      dump('#players online: '..num_players)
     end
   end
 
