@@ -195,6 +195,11 @@ local function list_players(pid)       -- list players in the room
   return ls
 end
 
+
+local function num_ppl()
+  return room.num_ppl()
+end
+
 local function size()
   return room.size()
 end
@@ -213,6 +218,7 @@ EXPORT.status  = status
 EXPORT.list_players   = list_players
 EXPORT.pinfo   = pinfo
 EXPORT.size    = size
+EXPORT.num_ppl = num_ppl
 EXPORT.bcast   = function(sid,txt) room.bcast(sid,txt) end
 EXPORT.contain = function(pid) return (room.get(pid) ~= nil) end
 EXPORT.poke    = function(pid) room.poke(pid) end
