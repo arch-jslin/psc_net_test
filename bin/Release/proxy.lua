@@ -32,6 +32,7 @@ local function read_conf()
     ret.num_ppl = 0
     ret.status = 'dead'  -- green/red/dead/full
     ret.conn = nil
+    ret.tm = os.time()
     return ret
   end
 
@@ -80,10 +81,10 @@ local function PS_POKE_R(m)
   local sta = m.status
   net.servers[key].num_ppl = num
   net.servers[key].status = sta
-
-  dump(m.T)
-  dump(net.servers[key])
+  net.servers[key].tm = os.time()
+  dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
 end
+
 local function CLI_LS_LOB(m)
   -- game client ask for a live server
   dump(m)
@@ -138,7 +139,15 @@ net.poke_all = function()
     end
   end)
 end
-
+net.check_all = function()
+  local ct = os.time()
+  table.foreach(net.servers, function(k,v)
+    if v.status~='dead' and (ct-v.tm)>30 then
+      dump('Server '..v.name..' went dead')
+      v.status = 'dead'
+    end
+  end)
+end
 --
 -- event handlers
 --
@@ -190,14 +199,19 @@ local function tick()
 
   end
 
+  -- every 5 secs
+  if net.num_tick % 5000 == 0 then
+    net.check_all()    -- mark disappear servers
+  end
+
   -- every 10 secs
   if net.num_tick % 10000 == 0 then
-    net.poke_all()
+    net.poke_all()     -- keep-alive on servers
   end
 
   -- every 60 secs
   if net.num_tick % 60000 == 0 then
-    net.connect_all()
+    net.connect_all()  -- re-connect dead server
   end
 
 end
