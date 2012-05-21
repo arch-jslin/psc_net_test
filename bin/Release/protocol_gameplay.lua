@@ -86,7 +86,7 @@ local function hit(peer, x,y)
   m.tm = os.time()
   kit.send(m, peer)
 end
-local function plist(peer)
+local function list_players(peer)
   local m = msg('PLS')
   m.pid = game.pid
   kit.send(m, peer)
@@ -101,9 +101,9 @@ end
 EXPORT.recv = recv
 EXPORT.poke = poke
 EXPORT.move = move
-EXPORT.hit  = hit
-EXPORT.plist = plist
 EXPORT.sync = sync
+EXPORT.hit = hit
+EXPORT.list_players = list_players
 EXPORT.setup = function(n, g)
   net = n
   game = g

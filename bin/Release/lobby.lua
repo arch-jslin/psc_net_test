@@ -177,8 +177,8 @@ local function peer(pid)        -- info about player
   if p == nil then return nil end
   return p.peer
 end
---
-local function plist(pid)       -- list players in the room
+
+local function list_players(pid)       -- list players in the room
   room.poke(pid)
   local ls = {}                 -- except the requester
   table.foreach(room.all(), function(k,v)
@@ -188,6 +188,10 @@ local function plist(pid)       -- list players in the room
     end
   end)
   return ls
+end
+
+local function size()
+  return room.size()
 end
 
 local function disconnect(e)
@@ -201,8 +205,9 @@ EXPORT.join    = join
 EXPORT.leave   = leave
 EXPORT.say     = say
 EXPORT.status  = status
-EXPORT.plist   = plist
+EXPORT.list_players   = list_players
 EXPORT.pinfo   = pinfo
+EXPORT.size    = size
 EXPORT.bcast   = function(sid,txt) room.bcast(sid,txt) end
 EXPORT.contain = function(pid) return (room.get(pid) ~= nil) end
 EXPORT.poke    = function(pid) room.poke(pid) end

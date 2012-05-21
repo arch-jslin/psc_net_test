@@ -23,7 +23,7 @@ RECV.URE = function(m)
 
   net.gotoLobbyReady()
 
-  EXPORT.plist(m.src)  -- test
+  EXPORT.list_players(m.src)  -- test
 end
 
 RECV.GREETING = function(m)
@@ -66,6 +66,18 @@ RECV.PLAY_W = function(m)
   end
 end
 
+RECV.CLI_RT_LOB = function(m)
+  dump(m)
+
+  if table.getn(m.servs) > 0 then
+    game.lobbys = m.servs
+
+    -- use the first one anyway
+    game.lobby_addr = {ip=m.servs[1].ip, port=m.servs[1].port}
+    net.gotoLobby()
+  end
+end
+
 
 -- receiver
 local recv = kit.getRecv(function (m)
@@ -89,7 +101,7 @@ local function send_iam(ip, port, pserv)
   m.nick  = 'nick '..string.random(4, '%d')
   kit.send(m, pserv)
 end
-local function plist(pserv)
+local function list_players(pserv)
   local m = msg('PLS')
   m.pid   = game.pid
   kit.send(m, pserv)
@@ -112,6 +124,10 @@ local function play_one(pserv, pid) -- tell server who I want to play with
   m.pid_tar = pid
   kit.send(m, pserv)
 end
+local function list_lobbies(lserv)
+  local m = msg('CLI_LS_LOB')
+  kit.send(m, lserv)
+end
 
 EXPORT.on = function(k,f) ON[k] = f end
 EXPORT.chat_lobby  = chat_lobby
@@ -120,7 +136,8 @@ EXPORT.play_one = play_one
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
 EXPORT.recv  = recv
-EXPORT.plist = plist
+EXPORT.list_players = list_players
+EXPORT.list_lobbies = list_lobbies
 EXPORT.setup = function(n, g)
   net  = n
   game = g

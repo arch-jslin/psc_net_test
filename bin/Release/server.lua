@@ -11,7 +11,7 @@ local dump     = kit.getDump('Server')
 local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
-print( "Self IP: "..self_ip )
+print( "Start Server: "..self_ip )
 local host = enet.host_create(self_ip..":54321", 1024)
 
 --
@@ -39,6 +39,14 @@ local function PLAY_W(pinfo, code)
   local m = msg('PLAY_W', code)
   m.tar = pinfo
   dump(pinfo.nick)
+  return m
+end
+
+local function PS_POKE_R(num, sta)
+  -- for proxy
+  local m = msg('PS_POKE_R')
+  m.num_ppl = num
+  m.status = sta
   return m
 end
 
@@ -72,7 +80,7 @@ local function IAM(m)
   }
 
   local ret = URE(p.id)
-  ret.ppl = lobby.plist(p.id)
+  ret.ppl = lobby.list_players(p.id)
   send(ret, peer)
 end
 
@@ -83,7 +91,7 @@ local function PLS(m)
   local ret = nil
 
   if lobby.contain(pid) then  -- auth
-    ret = PLS_R(lobby.plist(pid), 0)
+    ret = PLS_R(lobby.list_players(pid), 0)
   else
     ret = PLS_R(nil, 1)       -- error
   end
@@ -107,6 +115,21 @@ local function CHAT(m)
     lobby.bcast(sid, txt)
   end
 end
+local function PS_POKE(m)
+  -- from proxy
+  dump(m)
+
+  local num = lobby.size()
+  local sta = nil
+  if num<100 then
+    sta = 'green'
+  else
+    sta = 'red'
+  end
+
+  send(PS_POKE_R(num, sta), m.src)
+
+end
 
 local RECV = {}
 RECV.IAM  = IAM  -- register
@@ -114,6 +137,7 @@ RECV.PLS  = PLS  -- ask for online player list
 RECV.POKE = POKE
 RECV.CHAT = CHAT
 RECV.PLAY_1 = PLAY_1
+RECV.PS_POKE = PS_POKE
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
