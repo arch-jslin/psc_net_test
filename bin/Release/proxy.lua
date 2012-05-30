@@ -142,7 +142,7 @@ end
 net.check_all = function()
   local ct = os.time()
   table.foreach(net.servers, function(k,v)
-    if v.status~='dead' and (ct-v.tm)>30 then
+    if v.status~='dead' and (ct-v.tm)>15 then
       dump('Server '..v.name..' went dead')
       v.status = 'dead'
     end
@@ -201,7 +201,7 @@ local function tick()
 
   -- every 5 secs
   if net.num_tick % 5000 == 0 then
-    net.check_all()    -- mark disappear servers
+    net.check_all()    -- mark disappear servers (allow 15 sec delay at most)
   end
 
   -- every 10 secs

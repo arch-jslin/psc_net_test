@@ -13,6 +13,12 @@ local lobby    = require 'lobby'
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
 print( "Start Server: "..self_ip )
 local host = enet.host_create(self_ip..":54321", 1024)
+local mem  = {}
+mem.now  = 0
+mem._t   = 0   -- tick counter
+mem.snap = {}  -- history of online player list
+mem.diff = {}  -- diffed player list
+table.insert(mem.snap, 1, {})
 
 --
 -- outgoing messages
@@ -32,10 +38,15 @@ local function PLS_R(ppl, code)
   m.ppl = ppl
   return m
 end
+local function PLS_D_R(diff)
+  local m = msg('PLS_D_R')
+  m.add = diff.add
+  m.del = diff.del
+  return m
+end
 
 
 local function PLAY_W(pinfo, code)
-  --收到開始互連對方
   local m = msg('PLAY_W', code)
   m.tar = pinfo
   dump(pinfo.nick)
@@ -43,7 +54,7 @@ local function PLAY_W(pinfo, code)
 end
 
 local function PS_POKE_R(num, sta)
-  -- for proxy
+  -- response to proxy
   local m = msg('PS_POKE_R')
   m.num_ppl = num
   m.status = sta
@@ -54,7 +65,7 @@ end
 -- recv functions
 --
 local function PLAY_1(m)
-  -- 收到要和別人玩的請求
+  -- pid_me wants to play with pid_tar
   local pid1 = m.pid_me
   local pid2 = m.pid_tar
   if lobby.contain(pid1) and lobby.contain(pid2) then
@@ -73,6 +84,13 @@ local function IAM(m)
   local peer = m.src
   local p  = lobby.join(peer)
 
+  if p == nil then
+    local ret = URE('error')
+    send(ret, peer)
+    return
+  end
+
+
   p.nick = m.nick
   p.addr = {
     pub=addr(m.src),
@@ -85,13 +103,12 @@ local function IAM(m)
 end
 
 local function PLS(m)
-  --dump(m.T)
   local peer = m.src
   local pid  = m.pid
   local ret = nil
 
   if lobby.contain(pid) then  -- auth
-    ret = PLS_R(lobby.list_players(pid), 0)
+    ret = PLS_R(mem.snap[1], 0)
   else
     ret = PLS_R(nil, 1)       -- error
   end
@@ -100,14 +117,12 @@ local function PLS(m)
 end
 
 local function POKE(m)
-  --dump(m.T)
   local peer = m.src
   local pid  = m.pid
   lobby.poke(pid)
 end
 
 local function CHAT(m)
-  --dump(m.T)
   local sid  = m.pid
   local txt  = m.txt
   local type = m.type
@@ -129,8 +144,8 @@ local function PS_POKE(m)
 
   dump(num)
   send(PS_POKE_R(num, sta), m.src)
-
 end
+
 
 local RECV = {}
 RECV.IAM  = IAM  -- register
@@ -175,6 +190,75 @@ local function handle(t)
   return hnd(e)
 end
 
+local function _diff_plist(ls1, ls2)
+  local add = {}
+  local del = {}
+
+  table.foreach(ls1, function(k,v)
+    if ls2[k] == nil then
+      print('add '..ls1[k].pid)
+      table.insert(add, ls1[k])
+    end
+  end)
+
+  table.foreach(ls2, function(k,v)
+    if ls1[k] == nil then
+      print('del '..ls2[k].pid)
+      table.insert(del, ls2[k])
+    end
+  end)
+
+  mem.diff.add = add
+  mem.diff.del = del
+end
+
+local function _snap_plist(ls)
+  if ls == nil then return end
+
+  table.insert(mem.snap, 1, kit.deepcopy(ls))
+
+  local sz = table.getn(mem.snap)
+
+  print('mem.snap sz='..sz)
+
+  if sz > 5 then table.remove(mem.snap, sz) end
+end
+
+local function _bcast_diff_plist(ls)
+  local m = PLS_D_R(ls)
+
+  local pls = lobby.list_players()
+  table.foreach(pls, function(k,v)
+    if pls[k] ~= nil then
+      p = lobby.peer(pls[k].pid)
+      kit.send(m, p)
+    end
+  end)
+end
+
+local function proc_player_list()
+  local pls = lobby.table_players()
+
+  print('step 1 ...')
+  _snap_plist(pls)
+  print('step 2 ...')
+  _diff_plist(mem.snap[1], mem.snap[2])
+  print('step 3 ...')
+  _bcast_diff_plist(mem.diff)
+end
+
+local function tick()
+  if os.time() - mem.now > 0 then
+    mem.now = os.time()
+    mem._t = mem._t + 1
+
+    if mem._t % 5 == 0 then
+      proc_player_list()
+    end
+
+  end
+end
+
 --
 -- main loop
 --
@@ -183,4 +267,5 @@ while true do
   if ret then t = 1 else t = 100 end
   ret = handle(t)     -- handle messages
   lobby.tick()
+  tick()
 end

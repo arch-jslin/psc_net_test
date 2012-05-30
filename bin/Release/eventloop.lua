@@ -41,11 +41,12 @@ local CLIENT=2
 
 local net  = {}
 local game = {}
+-- game.proxy_addr = {ip="192.168.1.209", port=10000}
 game.proxy_addr = {ip="173.255.254.41", port=10000}
 game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
 game.hasPlayerList = function()
-  dump('has player list? '..tostring( game.ppl ~= nil and game.ppl[1] ~= nil ))
-  return ( game.ppl ~= nil and game.ppl[1] ~= nil )
+  dump('has player list? '..tostring( game.ppl ~= nil ))
+  return ( game.ppl ~= nil )
 end
 
 -- state controls
@@ -68,7 +69,6 @@ end
 net.gotoProxy = function()
   dump('state=CONN_TO_PROXY')
   net.state = Const.CONN_TO_PROXY
-  -- net.conn_proxy = net.connect(IP_LOCAL, game.proxy_addr.port)
   net.conn_proxy = net.connect(game.proxy_addr.ip, game.proxy_addr.port)
   return net.conn_proxy
 end
@@ -139,7 +139,6 @@ net.connect = function(ip, port)
   local conn = nil
   local function foo()
     conn = net.host:connect(ip..":"..port)
-    -- conn = net.host:connect(IP_LOCAL..":"..port)
   end
 
   local ok, err = pcall(foo)
@@ -150,7 +149,6 @@ net.server = function(ip, port)
   dump('connect to server...')
   local function foo()
     net.conn_server = net.host:connect(ip..":"..port)
-    -- net.conn_server = net.host:connect(IP_LOCAL..":"..port)
   end
 
   local ok, err = pcall(foo)
@@ -231,18 +229,23 @@ net.tick = function()
   -- commands from terminal
   local cc = ffi.string(C.poll_from_C())
   while cc and cc ~= '' do
-    -- tick_poll_core(cc)
     if not net.isPlayerReady() then
       if cc == '1' then
         if game.hasPlayerList() then
-          prep.play_one(net.conn_server, game.ppl[1].pid)
+
+          for k,v in pairs(game.ppl) do
+            if v.pid ~= game.pid then
+              prep.play_one(net.conn_server, v.pid)
+              break
+            end
+          end
+
         end
       end
     else
       local getT = loadstring(cc)
       local t = getT()
-      t.tm = os.time() -- appenddum
-      -- play.move(net.conn_farside, cc, 100)
+      t.tm = os.time()
       kit.send(t, net.conn_farside)
     end
     cc = ffi.string(C.poll_from_C())
@@ -255,18 +258,23 @@ net.tick = function()
       net.waitGreeting()
     end
 
+    -- re-send IAM if lobby server was full
+    if net.tm % 10 == 0 and net.state == Const.CONN_TO_LOBBY then
+      prep.send_iam(IP_LOCAL, PORT, net.conn_server)
+    end
+
     -- update live server list
     if net.tm % 15 == 0 and net.state == Const.IN_PROXY then
       prep.list_lobbies(net.conn_proxy)
     end
 
-    if net.tm % 10 == 0 and net.state == Const.IN_LOBBY then
+    -- request full player list every 5 mins
+    if net.tm % 300 == 0 and net.state == Const.IN_LOBBY then
       play.list_players(net.conn_server)
     end
 
     -- keep-alive
     if net.tm % 1 == 0 and net.state >= Const.IN_LOBBY then
-      -- dump('poke server. tm='..net.tm..' state='..net.state)
       prep.poke_server(net.conn_server)
     end
 
@@ -300,7 +308,7 @@ net.proc_server = function(e)
 
       -- TODO:
       -- request CLI_LS_LOB periodically and
-      -- trigger gotoLobby() according to user command
+      -- trigger gotoLobby() according to user's command
       prep.list_lobbies(net.conn_proxy)
     end
 
@@ -320,15 +328,6 @@ end
 -- Entry point
 -- global function so it can be called from C++
 function init(sc_flag)
-  -- if sc_flag == SERVER then
-  --   PORT = PORT_A
-  --   net.asServer = true
-  --   net.init(IP_LOCAL, PORT)
-  -- elseif sc_flag == CLIENT then
-  --   PORT = PORT_B
-  --   net.asServer = false
-  --   net.init(IP_LOCAL, PORT)
-  -- end
   PORT = sc_flag
   net.asServer = (sc_flag%2==0)
   net.init(IP_LOCAL, PORT)

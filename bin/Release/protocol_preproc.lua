@@ -15,7 +15,12 @@ local game   = nil
 local RECV = {}
 
 RECV.URE = function(m)
-  dump(m.T)
+  dump(m.T..' '..m.pid)
+
+  if m.pid == 'error' then -- server full
+    dump('server is full')
+    return
+  end
 
   game.pid = m.pid
   table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
@@ -37,10 +42,6 @@ RECV.PLS_R = function(m)
   if m.C==0 then
     table.foreach(m.ppl, function(k, v) v.addr = kit.addr_ext(v.addr) end)
     game.ppl = m.ppl
-    game.ppl_map = {}
-    table.foreach(game.ppl, function(k, v)
-      game.ppl_map[v.pid] = v
-    end)
   end
 end
 
@@ -58,7 +59,7 @@ RECV.PLAY_W = function(m)
   pmsg(m)
   if m.C == 0 then
     m.tar.addr = kit.addr_ext(m.tar.addr)
-    game.ppl_map[m.tar.pid] = m.tar
+    game.ppl[m.tar.pid] = m.tar
 
     net.gotoPlayer(m.tar)
   else
@@ -78,6 +79,51 @@ RECV.CLI_RT_LOB = function(m)
   end
 end
 
+RECV.PLS_D_R = function(m)
+  dump(m.T)
+  local function _add_array(tar, itm)
+    local exist = false
+    table.foreach(tar, function(k,v)
+      if v.pid ==itm.pid then
+        tar[k] = itm
+        exist = true
+        print('add overwrite '.. itm.pid)
+      end
+    end)
+
+    if exist == false then
+      table.insert(tar, 1, itm)
+      print('add append '.. itm.pid)
+    end
+  end
+
+  local function _del_array(tar, itm)
+    local exist = false
+    table.foreach(tar, function(k,v)
+      if v.pid ==itm.pid then
+        tar[k] = nil
+        exist = true
+        print('del one '.. itm.pid)
+      end
+    end)
+
+    if exist == false then
+      print('del skip '.. itm.pid)
+    end
+  end
+
+  table.foreach(m.add, function(k,v)
+    _add_array(game.ppl, v)
+  end)
+  table.foreach(m.del, function(k,v)
+    _del_array(game.ppl, v)
+  end)
+
+  table.foreach(game.ppl, function(k,v)
+    print(v.pid)
+  end)
+
+end
 
 -- receiver
 local recv = kit.getRecv(function (m)
@@ -87,7 +133,6 @@ local recv = kit.getRecv(function (m)
   end
   RECV[m.T](m)
 end)
-
 
 -- outgoing messages
 local function greeting(peer)
@@ -118,7 +163,7 @@ local function chat_lobby(pserv, txt)
   m.type  = 'b' -- lobby
   kit.send(m, pserv)
 end
-local function play_one(pserv, pid) -- tell server who I want to play with
+local function play_one(pserv, pid)
   local m = msg('PLAY_1')
   m.pid_me  = game.pid
   m.pid_tar = pid

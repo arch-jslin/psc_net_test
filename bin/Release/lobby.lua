@@ -167,23 +167,23 @@ local function pinfo(pid)        -- info about player
   local p = room.get(pid)
   if p == nil then return nil end
 
-  local info = {}
-  info.pid = pid
+  local info  = {}
+  info.pid    = pid
   info.status = p.status
   info.addr = p.addr
   info.nick = p.nick
   return info
 end
 
-local function peer(pid)        -- info about player
+local function peer(pid)         -- info about player
   local p = room.get(pid)
   if p == nil then return nil end
   return p.peer
 end
 
-local function list_players(pid)       -- list players in the room
+local function list_players(pid) -- list players in the room
   room.poke(pid)
-  local ls = {}                 -- except the requester
+  local ls = {}                  -- except the requester
   table.foreach(room.all(), function(k,v)
     if pid ~= k then
       local p = pinfo(k)
@@ -192,7 +192,17 @@ local function list_players(pid)       -- list players in the room
   end)
   return ls
 end
-
+local function table_players(pid) -- list players in the room
+  room.poke(pid)
+  local tb = {}                  -- except the requester
+  table.foreach(room.all(), function(k,v)
+    if pid ~= k then
+      local p = pinfo(k)
+      tb[p.pid] = p
+    end
+  end)
+  return tb
+end
 
 local function num_ppl()
   return room.num_ppl()
@@ -202,14 +212,15 @@ local function disconnect(e)
   room.lookup(e, room.del)
 end
 
---EXPORT.connect    = connect
-EXPORT.peer  = peer
+-- EXPORT.connect    = connect
+EXPORT.peer    = peer
 EXPORT.disconnect = disconnect
 EXPORT.join    = join
 EXPORT.leave   = leave
 EXPORT.say     = say
 EXPORT.status  = status
-EXPORT.list_players   = list_players
+EXPORT.list_players  = list_players
+EXPORT.table_players = table_players
 EXPORT.pinfo   = pinfo
 EXPORT.num_ppl = num_ppl
 EXPORT.bcast   = function(sid,txt) room.bcast(sid,txt) end
