@@ -6,7 +6,7 @@ local EXPORT = {}
 
 -- Constants
 local Const = {
-  MAX_PLAYER_A_ROOM=2,
+  MAX_PLAYER_A_ROOM=10000,
   STATE={
     IDLE='idle',
     PLAYING='playing'
