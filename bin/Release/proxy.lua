@@ -108,7 +108,7 @@ RECV.CLI_LS_LOB = CLI_LS_LOB
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
-net.tm = 0
+net.tm = os.time()
 net.num_tick = 0
 net.servers = nil
 net.host = enet.host_create(self_ip..":10000", 1024)
@@ -169,6 +169,7 @@ HAND.connect = function(e)
   local key = tostring(e.peer)
   if net.servers[key] ~= nil then
     net.servers[key].status = 'green'
+    net.servers[key].tm = os.time()
     dump(net.servers)
   end
 
