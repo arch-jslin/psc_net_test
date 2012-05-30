@@ -45,7 +45,6 @@ local function PLS_D_R(diff)
   return m
 end
 
-
 local function PLAY_W(pinfo, code)
   local m = msg('PLAY_W', code)
   m.tar = pinfo
@@ -90,7 +89,6 @@ local function IAM(m)
     return
   end
 
-
   p.nick = m.nick
   p.addr = {
     pub=addr(m.src),
@@ -130,6 +128,7 @@ local function CHAT(m)
     lobby.bcast(sid, txt)
   end
 end
+
 local function PS_POKE(m)
   -- from proxy
   dump(m)
@@ -145,7 +144,6 @@ local function PS_POKE(m)
   dump(num)
   send(PS_POKE_R(num, sta), m.src)
 end
-
 
 local RECV = {}
 RECV.IAM  = IAM  -- register
@@ -219,31 +217,25 @@ local function _snap_plist(ls)
 
   local sz = table.getn(mem.snap)
 
-  print('mem.snap sz='..sz)
-
   if sz > 5 then table.remove(mem.snap, sz) end
 end
 
 local function _bcast_diff_plist(ls)
   local m = PLS_D_R(ls)
+  local ppl = lobby.list_players()
 
-  local pls = lobby.list_players()
-  table.foreach(pls, function(k,v)
-    if pls[k] ~= nil then
-      p = lobby.peer(pls[k].pid)
-      kit.send(m, p)
+  table.foreach(ppl, function(k,v)
+    if ppl[k] ~= nil then
+      kit.send(m, lobby.peer(ppl[k].pid))
     end
   end)
 end
 
-local function proc_player_list()
-  local pls = lobby.table_players()
+local function proc_player_table()
+  local ppl = lobby.table_players()
 
-  print('step 1 ...')
-  _snap_plist(pls)
-  print('step 2 ...')
+  _snap_plist(ppl)
   _diff_plist(mem.snap[1], mem.snap[2])
-  print('step 3 ...')
   _bcast_diff_plist(mem.diff)
 end
 
@@ -253,7 +245,7 @@ local function tick()
     mem._t = mem._t + 1
 
     if mem._t % 5 == 0 then
-      proc_player_list()
+      proc_player_table()
     end
 
   end

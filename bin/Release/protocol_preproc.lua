@@ -93,14 +93,14 @@ RECV.PLS_D_R = function(m)
 
     if exist == false then
       table.insert(tar, 1, itm)
-      print('add append '.. itm.pid)
+      -- print('add append '.. itm.pid)
     end
   end
 
   local function _del_array(tar, itm)
     local exist = false
     table.foreach(tar, function(k,v)
-      if v.pid ==itm.pid then
+      if v.pid == itm.pid then
         tar[k] = nil
         exist = true
         print('del one '.. itm.pid)
@@ -112,17 +112,12 @@ RECV.PLS_D_R = function(m)
     end
   end
 
-  table.foreach(m.add, function(k,v)
+  table.foreach(m.add, function(k, v)
     _add_array(game.ppl, v)
   end)
-  table.foreach(m.del, function(k,v)
+  table.foreach(m.del, function(k, v)
     _del_array(game.ppl, v)
   end)
-
-  table.foreach(game.ppl, function(k,v)
-    print(v.pid)
-  end)
-
 end
 
 -- receiver

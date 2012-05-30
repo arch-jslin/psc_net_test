@@ -45,7 +45,7 @@ local function _player(peer)
 	return p
 end
 
-local function _room(c)  -- connection
+local function _room(c)
 	local r = {}
 	local players = {}
   local now = os.time()
@@ -57,6 +57,7 @@ local function _room(c)  -- connection
   r.get = function(pid)
     return players[pid]
   end
+
   r.lookup = function(e, cb)
     table.foreach(players, function(k,v)
       if tostring(v.peer)==tostring(e.peer) then
@@ -192,6 +193,7 @@ local function list_players(pid) -- list players in the room
   end)
   return ls
 end
+
 local function table_players(pid) -- list players in the room
   room.poke(pid)
   local tb = {}                  -- except the requester

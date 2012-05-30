@@ -268,8 +268,8 @@ net.tick = function()
       prep.list_lobbies(net.conn_proxy)
     end
 
-    -- request full player list every 5 mins
-    if net.tm % 300 == 0 and net.state == Const.IN_LOBBY then
+    -- request full player list every 10 mins
+    if net.tm % 600 == 0 and net.state == Const.IN_LOBBY then
       play.list_players(net.conn_server)
     end
 

@@ -8,7 +8,7 @@ local addr_str = kit.addr_str
 local msg      = kit.msg
 local pmsg     = kit.pmsg
 local dump     = kit.getDump('Proxy')
-local send = require 'kit'.send
+local send     = require 'kit'.send
 
 local self_ip  = socket.dns.toip( socket.dns.gethostname() )
 print( "Start Proxy: "..self_ip )
@@ -17,7 +17,6 @@ print( "Start Proxy: "..self_ip )
 -- variables
 --
 local net = {}
-
 
 --
 -- tool functions
@@ -52,7 +51,6 @@ local function read_conf()
   return machines;
 end
 
-
 --
 -- outgoing messages
 --
@@ -82,12 +80,12 @@ local function PS_POKE_R(m)
   net.servers[key].num_ppl = num
   net.servers[key].status = sta
   net.servers[key].tm = os.time()
-  dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
+  -- dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
 end
 
 local function CLI_LS_LOB(m)
   -- game client ask for a live server
-  dump(m)
+  dump(m.T)
 
   local res = CLI_RT_LOB()
 
@@ -112,12 +110,12 @@ net.tm = os.time()
 net.num_tick = 0
 net.servers = nil
 net.host = enet.host_create(self_ip..":10000", 1024)
+
 net.connect = function(ip, port)
   dump('connecting to... '..ip..':'..port)
   local conn = nil
   local function foo()
     conn = net.host:connect(ip..":"..port)
-    -- conn = net.host:connect(IP_LOCAL..":"..port)
   end
 
   local ok, err = pcall(foo)
@@ -132,13 +130,13 @@ net.connect_all = function()
     end
   end)
 end
+
 net.poke_all = function()
   table.foreach(net.servers, function(k,v)
-    if v.status ~= 'dead' then
-      send(PS_POKE(), v.conn)
-    end
+    if v.status ~= 'dead' then send(PS_POKE(), v.conn) end
   end)
 end
+
 net.check_all = function()
   local ct = os.time()
   table.foreach(net.servers, function(k,v)
@@ -148,6 +146,7 @@ net.check_all = function()
     end
   end)
 end
+
 --
 -- event handlers
 --
