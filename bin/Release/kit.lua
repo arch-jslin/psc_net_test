@@ -188,6 +188,47 @@ EXPORT.addr_ext = function(tar)
   return tar
 end
 
+
+EXPORT.helper = {}
+EXPORT.helper.keepalive = function(th)
+  local dump = EXPORT.getDump('keepalive')
+
+  local tb_time = {}
+  local threshold = th or 5
+
+  local function _poke(key)
+    tb_time[key] = os.time()
+  end
+  local function _num()
+    local cnt = 0
+    table.foreach(tb_time, function(k,v)
+      cnt = cnt + 1
+    end)
+    return cnt
+  end
+  local function _chk_zombie(cbt, cbf)
+    table.foreach(tb_time, function(k,v)
+      if os.time() - v > threshold then
+        if (cbt~=nil) then cbt(k) end -- is a zombie
+      else
+        if (cbf~=nil) then cbf(k) end -- not a zombie
+      end
+    end)
+  end
+
+  local function _del(key)
+    tb_time[key] = nil
+  end
+
+  return
+  { poke = _poke
+  , num  = _num
+  , del  = _del
+  , chk_zombie = _chk_zombie
+  }
+end
+
+
 EXPORT.str_test1 = string.random(1024)
 EXPORT.str_test2 = string.random(10240)
 

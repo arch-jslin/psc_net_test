@@ -124,6 +124,7 @@ local function CHAT(m)
   local sid  = m.pid
   local txt  = m.txt
   local type = m.type
+
   if type=='b' then
     lobby.bcast(sid, txt)
   end

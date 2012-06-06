@@ -79,7 +79,9 @@ local function PS_POKE_R(m)
   local sta = m.status
   net.servers[key].num_ppl = num
   net.servers[key].status = sta
-  net.servers[key].tm = os.time()
+
+  -- net.servers[key].tm = os.time()
+  net.keepalive.poke(key)
   -- dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
 end
 
@@ -111,6 +113,8 @@ net.num_tick = 0
 net.servers = nil
 net.host = enet.host_create(self_ip..":10000", 1024)
 
+net.keepalive = kit.helper.keepalive(15)
+
 net.connect = function(ip, port)
   dump('connecting to... '..ip..':'..port)
   local conn = nil
@@ -132,18 +136,14 @@ net.connect_all = function()
 end
 
 net.poke_all = function()
-  table.foreach(net.servers, function(k,v)
-    if v.status ~= 'dead' then send(PS_POKE(), v.conn) end
+  net.keepalive.chk_zombie(nil, function(key)
+    send(PS_POKE(), net.servers[key].conn)
   end)
 end
 
 net.check_all = function()
-  local ct = os.time()
-  table.foreach(net.servers, function(k,v)
-    if v.status~='dead' and (ct-v.tm)>15 then
-      dump('Server '..v.name..' went dead')
-      v.status = 'dead'
-    end
+  net.keepalive.chk_zombie(function(key)
+    net.servers[key].status = 'dead'
   end)
 end
 
@@ -158,6 +158,8 @@ end
 
 HAND.disconnect = function(e)
   print("Disconnect:", e.peer)
+  local key = tostring(e.peer)
+  net.keepalive.del(key)
   return true
 end
 
@@ -168,7 +170,8 @@ HAND.connect = function(e)
   local key = tostring(e.peer)
   if net.servers[key] ~= nil then
     net.servers[key].status = 'green'
-    net.servers[key].tm = os.time()
+    -- net.servers[key].tm = os.time()
+    net.keepalive.poke(key)
     dump(net.servers)
   end
 
