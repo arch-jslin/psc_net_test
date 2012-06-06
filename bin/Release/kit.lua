@@ -1,6 +1,7 @@
 
-local mp      = require "luajit-msgpack-pure"
+local mp      = require 'luajit-msgpack-pure'
 local gettime = require 'socket'.gettime
+local serpent = require 'serpent'
 
 local EXPORT  = {}
 
@@ -9,7 +10,6 @@ local function curry(f)
     return function (y) return f(x,y) end
   end
 end
-
 
 -- random string generator
 math.randomseed(socket.gettime()*1000)
@@ -54,44 +54,6 @@ function string.random(Length, CharSet)
    end
 end
 
--- table printer
-local function table_print (tt, indent, done)
-  done = done or {}
-  indent = indent or 0
-  if type(tt) == "table" then
-    local sb = {}
-    for key, value in pairs (tt) do
-      table.insert(sb, string.rep (" ", indent)) -- indent it
-      if type (value) == "table" and not done [value] then
-        done [value] = true
-        table.insert(sb, "{\n");
-        table.insert(sb, table_print (value, indent + 2, done))
-        table.insert(sb, string.rep (" ", indent)) -- indent it
-        table.insert(sb, "}\n");
-      elseif "number" == type(key) then
-        table.insert(sb, string.format("\"%s\"\n", tostring(value)))
-      else
-        table.insert(sb, string.format(
-            "%s = \"%s\"\n", tostring (key), tostring(value)))
-       end
-    end
-    return table.concat(sb)
-  else
-    return tt .. "\n"
-  end
-end
-
-local function _strtab ( tbl )
-    if "nil" == type( tbl ) then
-        return tostring(nil)
-    elseif "table" == type( tbl ) then
-        return table_print(tbl)
-    elseif "string" == type( tbl ) then
-        return tbl
-    else
-        return tostring(tbl)
-    end
-end
 
 EXPORT.deepcopy = function (object)
     local lookup_table = {}
@@ -120,23 +82,15 @@ EXPORT.msg = function (t, c)
   return r
 end
 
--- print table
-EXPORT.ptab = function(tb)
-  print(_strtab(tb))
-end
-
 -- pring message
 EXPORT.pmsg = function(m)
-  print('***** '..m.T..' *****')
-  print(_strtab(m))
-end
-
-
-local function _dump(header, text)
-  print(header..': '.._strtab(text))
+  print(serpent.printsing(m))
 end
 
 EXPORT.getDump = function(h)
+  local function _dump(header, text)
+    print(header..': '..serpent.printmult(text))
+  end
   return curry(_dump)(h)
 end
 
@@ -193,22 +147,40 @@ EXPORT.helper = {}
 EXPORT.helper.keepalive = function(th)
   local dump = EXPORT.getDump('keepalive')
 
-  local tb_time = {}
-  local threshold = th or 5
+  local timetb = {}  -- time table
+  local THRESHOLD = th or 5
+
+  local _name = nil
+  local _recv = nil
+  local _send = function(peer)
+    local m = EXPORT.msg(_name)    -- PS_POKE
+    EXPORT.send(m, peer)
+  end
 
   local function _poke(key)
-    tb_time[key] = os.time()
+    timetb[key] = os.time()
   end
+
+  local function _bind (name, tb, cb)
+    _name = name
+    _recv = function(m)
+      dump(m.T)
+      cb(m)
+      _poke(tostring(m.src))
+    end
+    tb[name..'_R'] = _recv   -- PS_POKE_R
+  end
+
   local function _num()
     local cnt = 0
-    table.foreach(tb_time, function(k,v)
+    table.foreach(timetb, function(k,v)
       cnt = cnt + 1
     end)
     return cnt
   end
   local function _chk_zombie(cbt, cbf)
-    table.foreach(tb_time, function(k,v)
-      if os.time() - v > threshold then
+    table.foreach(timetb, function(k,v)
+      if os.time() - v > THRESHOLD then
         if (cbt~=nil) then cbt(k) end -- is a zombie
       else
         if (cbf~=nil) then cbf(k) end -- not a zombie
@@ -217,7 +189,7 @@ EXPORT.helper.keepalive = function(th)
   end
 
   local function _del(key)
-    tb_time[key] = nil
+    timetb[key] = nil
   end
 
   return
@@ -225,6 +197,8 @@ EXPORT.helper.keepalive = function(th)
   , num  = _num
   , del  = _del
   , chk_zombie = _chk_zombie
+  , bind = _bind
+  , send = _send
   }
 end
 

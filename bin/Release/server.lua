@@ -132,7 +132,7 @@ end
 
 local function PS_POKE(m)
   -- from proxy
-  dump(m)
+  pmsg(m)
 
   local num = lobby.num_ppl()
   local sta = nil
@@ -147,11 +147,11 @@ local function PS_POKE(m)
 end
 
 local RECV = {}
-RECV.IAM  = IAM  -- register
-RECV.PLS  = PLS  -- ask for online player list
-RECV.POKE = POKE
-RECV.CHAT = CHAT
-RECV.PLAY_1 = PLAY_1
+RECV.IAM   = IAM  -- register
+RECV.PLS   = PLS  -- ask for online player list
+RECV.POKE  = POKE
+RECV.CHAT  = CHAT
+RECV.PLAY_1  = PLAY_1
 RECV.PS_POKE = PS_POKE
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)

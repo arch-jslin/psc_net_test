@@ -162,7 +162,7 @@ end
 local room = _room()
 
 local function list_players(pid) -- list players in the room
-  room.poke(pid)
+  if pid ~= nil then room.poke(pid) end
   local ls = {}                  -- except the requester
   table.foreach(room.all(), function(k,v)
     if pid ~= k then
@@ -174,8 +174,8 @@ local function list_players(pid) -- list players in the room
 end
 
 local function table_players(pid) -- list players in the room
-  room.poke(pid)
-  local tb = {}                  -- except the requester
+  if pid ~= nil then room.poke(pid) end
+  local tb = {}                   -- except the requester
   table.foreach(room.all(), function(k,v)
     if pid ~= k then
       local p = room.pinfo(k)

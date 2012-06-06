@@ -57,11 +57,11 @@ end
 local send = require 'kit'.send
 
 -- assign player id (session) to client
-local function PS_POKE(pid)
-  -- proxy pokes game server
-  local m = msg('PS_POKE')
-  return m
-end
+-- local function PS_POKE(pid)
+--   -- proxy pokes game server
+--   local m = msg('PS_POKE')
+--   return m
+-- end
 
 local function CLI_RT_LOB()
   -- proxy responds server list to client
@@ -72,18 +72,18 @@ end
 --
 -- recv functions
 --
-local function PS_POKE_R(m)
-  -- update server status
-  local key = tostring(m.src)
-  local num = m.num_ppl
-  local sta = m.status
-  net.servers[key].num_ppl = num
-  net.servers[key].status = sta
+-- local function PS_POKE_R(m)
+--   -- update server status
+--   local key = tostring(m.src)
+--   local num = m.num_ppl
+--   local sta = m.status
+--   net.servers[key].num_ppl = num
+--   net.servers[key].status = sta
 
-  -- net.servers[key].tm = os.time()
-  net.keepalive.poke(key)
-  -- dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
-end
+--   -- net.servers[key].tm = os.time()
+--   net.keepalive.poke(key)
+--   -- dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
+-- end
 
 local function CLI_LS_LOB(m)
   -- game client ask for a live server
@@ -103,7 +103,7 @@ local function CLI_LS_LOB(m)
 end
 
 local RECV = {}
-RECV.PS_POKE_R = PS_POKE_R
+-- RECV.PS_POKE_R = PS_POKE_R
 RECV.CLI_LS_LOB = CLI_LS_LOB
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
@@ -114,6 +114,13 @@ net.servers = nil
 net.host = enet.host_create(self_ip..":10000", 1024)
 
 net.keepalive = kit.helper.keepalive(15)
+net.keepalive.bind('PS_POKE', RECV, function(m)
+  local key = tostring(m.src)
+  local num = m.num_ppl
+  local sta = m.status
+  net.servers[key].num_ppl = num
+  net.servers[key].status = sta
+end)
 
 net.connect = function(ip, port)
   dump('connecting to... '..ip..':'..port)
@@ -137,7 +144,8 @@ end
 
 net.poke_all = function()
   net.keepalive.chk_zombie(nil, function(key)
-    send(PS_POKE(), net.servers[key].conn)
+    -- send(PS_POKE(), net.servers[key].conn)
+    net.keepalive.send(net.servers[key].conn)
   end)
 end
 

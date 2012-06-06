@@ -276,7 +276,7 @@ net.tick = function()
     -- keep-alive
     if net.tm % 1 == 0 and net.state >= Const.IN_LOBBY then
       prep.poke_server(net.conn_server)
-      prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+      -- prep.chat_lobby(net.conn_server, string.random(6)..os.time())
     end
 
   end

@@ -46,7 +46,7 @@ RECV.PLS_R = function(m)
 end
 
 RECV.CHAT = function(m)
-  dump(m)
+  dump(m.T)
   local sid = m.sid
   local txt = m.txt
   local type= m.type
