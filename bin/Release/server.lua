@@ -11,8 +11,8 @@ local dump     = kit.getDump('Server')
 local lobby    = require 'lobby'
 
 local self_ip = socket.dns.toip( socket.dns.gethostname() )
-print( "Start Server: "..self_ip )
-local host = enet.host_create(self_ip..":54321", 1024)
+local self_port = 54321
+local host = nil
 local mem  = {}
 mem.now  = 0
 mem._t   = 0   -- tick counter
@@ -255,10 +255,21 @@ end
 --
 -- main loop
 --
-ret = true
-while true do
-  if ret then t = 1 else t = 100 end
-  ret = handle(t)     -- handle messages
-  lobby.tick()
-  tick()
+if arg[1] == nil then
+
+  print( "Start Server: "..self_ip )
+  host = enet.host_create(self_ip..":"..self_port, 1024)
+
+  ret = true
+  while true do
+    if ret then t = 1 else t = 100 end
+    ret = handle(t)     -- handle messages
+    lobby.tick()
+    tick()
+  end
+
+else
+
+  assert(self_port == 54321                        , 'Default proxy port should be 54321')
+
 end

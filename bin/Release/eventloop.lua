@@ -33,16 +33,15 @@ bool check_quit();
 
 local PORT_A = 2501
 local PORT_B = 2502
-local PORT = 2501
+local PORT   = 2501
 local IP_LOCAL = socket.dns.toip( socket.dns.gethostname() )
-dump( "Local IP: "..IP_LOCAL )
-local SERVER=1
-local CLIENT=2
+local SERVER = 1
+local CLIENT = 2
 
 local net  = {}
 local game = {}
-game.proxy_addr = {ip="192.168.1.209", port=10000}
--- game.proxy_addr = {ip="173.255.254.41", port=10000}
+-- game.proxy_addr = {ip="192.168.1.209", port=10000}
+game.proxy_addr = {ip="173.255.254.41", port=10000}
 game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil ))
@@ -360,4 +359,27 @@ end
 function dtor()
   net.reset()
   dump('event loop ended.')
+end
+
+
+if arg[1] == nil then
+
+  dump( "Local IP: "..IP_LOCAL )
+
+else
+
+  assert(Const.OFFLINE        == 0, 'Const.OFFLINE should be 0')
+  assert(Const.CONN_TO_PROXY  == 1, 'Const.CONN_TO_PROXY should be 1')
+  assert(Const.IN_PROXY       == 2, 'Const.IN_PROXY should be 2')
+  assert(Const.CONN_TO_LOBBY  == 3, 'Const.CONN_TO_LOBBY should be 3')
+  assert(Const.IN_LOBBY       == 4, 'Const.IN_LOBBY should be 4')
+  assert(Const.CONN_TO_PLAYER == 5, 'Const.CONN_TO_PLAYER should be 5')
+  assert(Const.READY_TO_PLAY  == 6, 'Const.READY_TO_PLAY should be 6')
+  assert(Const.IN_GAME        == 7, 'Const.IN_GAME should be 7')
+  assert(Const.GIVE_UP        == 9, 'Const.GIVE_UP should be 9')
+  assert(game.proxy_addr.ip   == '173.255.254.41', 'Proxy ip should be 173.255.254.41')
+  assert(game.proxy_addr.port == 10000           , 'Proxy port should be 10000')
+  assert(game.lobby_addr.ip   == '173.255.254.41', 'Lobby\'s default ip should be 173.255.254.41')
+  assert(game.lobby_addr.port == 54321           , 'Lobby\'s default port should be 173.255.254.41')
+
 end

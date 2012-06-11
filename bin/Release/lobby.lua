@@ -1,5 +1,5 @@
 local kit    = require 'kit'
-local dump   = kit.getDump('Lua-Lobby')
+local dump   = kit.getDump('Lobby')
 local msg    = kit.msg
 local sleep  = require 'socket'.sleep
 local EXPORT = {}

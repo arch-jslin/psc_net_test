@@ -11,7 +11,7 @@ local dump     = kit.getDump('Proxy')
 local send     = require 'kit'.send
 
 local self_ip  = socket.dns.toip( socket.dns.gethostname() )
-print( "Start Proxy: "..self_ip )
+local self_port = 10000
 
 --
 -- variables
@@ -111,7 +111,7 @@ local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 net.tm = os.time()
 net.num_tick = 0
 net.servers = nil
-net.host = enet.host_create(self_ip..":10000", 1024)
+net.host = enet.host_create(self_ip..":"..self_port, 1024)
 
 net.keepalive = kit.helper.keepalive(15)
 net.keepalive.bind('PS_POKE', RECV, function(m)
@@ -230,12 +230,24 @@ end
 --
 -- main loop
 --
-net.servers = read_conf()
-dump(net.servers)
-net.connect_all()
+if arg[1] == nil then
 
-while true do
-  handle(1)     -- handle messages
-  tick()
+  print( "Start Proxy: "..self_ip )
+  net.servers = read_conf()
+  -- dump(net.servers)
+  net.connect_all()
+
+  while true do
+    handle(1)     -- handle messages
+    tick()
+  end
+
+else
+
+  net.servers = read_conf()
+
+  assert(net.servers['173.255.254.41:54321'] ~= nil, 'Server address is missing in proxy.conf')
+  assert(self_port == 10000                        , 'Default proxy port should be 10000')
+
+
 end
-
