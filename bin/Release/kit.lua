@@ -2,14 +2,52 @@
 local mp      = require 'luajit-msgpack-pure'
 local gettime = require 'socket'.gettime
 local serpent = require 'serpent'
+local serpent = require 'serpent'
 
 local EXPORT  = {}
 
-local function curry(f)
-  return function (x)
-    return function (y) return f(x,y) end
+-- local function curry(f)
+--   return function (x)
+--     return function (y) return f(x,y) end
+--   end
+-- end
+
+-- reverse(...) : take some tuple and return a tuple of elements in reverse order
+-- e.g. "reverse(1,2,3)" returns 3,2,1
+local function reverse(...)
+  local function reverse_h(acc, v, ...)
+    if 0 == select('#', ...) then
+        return v, acc()
+    else
+        return reverse_h(function () return v, acc() end, ...)
+    end
   end
+
+  return reverse_h(function () return end, ...)
 end
+
+local function curry(func, num_args)
+  -- currying 2-argument functions seems to be the most popular application
+  num_args = num_args or 2
+
+  if num_args <= 1 then return func end
+
+  local function curry_h(argtrace, n)
+    if 0 == n then
+      return func(reverse(argtrace()))
+    else
+      return function (onearg)
+        return curry_h(function () return onearg, argtrace() end, n - 1)
+      end
+    end
+  end
+
+  -- push the terminal case of argtrace into the function first
+  return curry_h(function () return end, num_args)
+
+end
+
+EXPORT.curry = curry
 
 -- random string generator
 math.randomseed(socket.gettime()*1000)
@@ -202,8 +240,38 @@ EXPORT.helper.keepalive = function(th)
   }
 end
 
+local dump = EXPORT.getDump('Kit')
+
+EXPORT.kindof = function (base, n) return (n % base == 0) end
+EXPORT.eq = function (l, r) return l==r end
+
+--
+-- experimental functions
+--
+function gte(l, r)
+  return l>=r
+end
+function lte(l, r)
+  return l<=r
+end
+
+function check(...)
+  local arg = {...}
+  for i = 1, select('#',...)-1 do
+    dump('try '..i..tostring(arg[i]))
+    if not arg[i] then return end
+  end
+
+  dump('call ')
+  arg[select('#',...)]() -- the last argument is callback function
+end
 
 EXPORT.str_test1 = string.random(1024)
 EXPORT.str_test2 = string.random(10240)
 
 return EXPORT
+
+
+
+
+

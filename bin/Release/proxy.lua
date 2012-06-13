@@ -9,6 +9,7 @@ local msg      = kit.msg
 local pmsg     = kit.pmsg
 local dump     = kit.getDump('Proxy')
 local send     = require 'kit'.send
+local kindof   = kit.kindof
 
 local self_ip  = socket.dns.toip( socket.dns.gethostname() )
 local self_port = 10000
@@ -211,17 +212,18 @@ local function tick()
   end
 
   -- every 5 secs
-  if net.num_tick % 5000 == 0 then
+  -- if net.num_tick % 5000 == 0 then
+  if kindof(5000, net.num_tick) then
     net.check_all()    -- mark disappear servers (allow 15 sec delay at most)
   end
 
   -- every 10 secs
-  if net.num_tick % 10000 == 0 then
+  if kindof(10000, net.num_tick) then
     net.poke_all()     -- keep-alive on servers
   end
 
   -- every 60 secs
-  if net.num_tick % 60000 == 0 then
+  if kindof(60000, net.num_tick) then
     net.connect_all()  -- re-connect dead server
   end
 

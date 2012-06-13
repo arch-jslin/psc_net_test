@@ -21,6 +21,8 @@ local dump     = kit.getDump('Lua')
 local ns       = require 'net_strategy'
 local prep     = require 'protocol_preproc'
 local play     = require 'protocol_gameplay'
+local kindof   = kit.kindof
+local eq       = kit.eq
 
 ffi.cdef[[
 void on_connected(char const*);
@@ -101,11 +103,25 @@ net.gotoPlayerReady = function()
     dump('Pose as '..'Client')
   end
 end
+
 net.gotoGame   = function() net.state = Const.IN_GAME end
 net.gotoGiveup = function() net.state = Const.GIVE_UP end
 
 net.isInLobby = function() return (net.state == Const.IN_LOBBY) end
 net.isPlayerReady = function() return (net.state == Const.READY_TO_PLAY) end
+net.at = function(loc)
+  if loc ~= nil then
+    return net.state == loc
+  else
+    net.state = loc
+  end
+end
+net.after = function(loc)
+  return (net.state > loc)
+end
+net.before = function(loc)
+  return (net.state < loc)
+end
 
 -- connection management
 net.conn_server  = nil
@@ -253,41 +269,44 @@ net.tick = function()
   if (os.time() - net.tm > 0) then
     net.tm = os.time()
 
-    if net.state == Const.CONN_TO_PLAYER then
+    if net.at(Const.CONN_TO_PLAYER) then
+      prep.poke_server(net.conn_server)
       net.waitGreeting()
     end
 
+    -- keep-alive
+    if kindof(1, net.tm) and not net.before(Const.IN_LOBBY) then
+      prep.poke_server(net.conn_server)
+      -- prep.chat_lobby(net.conn_server, string.random(6)..os.time())
+    end
+
     -- re-send IAM if lobby server was full
-    if net.tm % 10 == 0 and net.state == Const.CONN_TO_LOBBY then
+    if kindof(10, net.tm) and net.at(Const.CONN_TO_LOBBY) then
       prep.send_iam(IP_LOCAL, PORT, net.conn_server)
     end
 
     -- update live server list
-    if net.tm % 15 == 0 and net.state == Const.IN_PROXY then
+    if kindof(15, net.tm) and net.at(Const.IN_PROXY) then
       prep.list_lobbies(net.conn_proxy)
     end
 
     -- request full player list every 10 mins
-    if net.tm % 600 == 0 and net.state == Const.IN_LOBBY then
+    if kindof(600, net.tm) and net.at(Const.IN_LOBBY) then
       play.list_players(net.conn_server)
-    end
-
-    -- keep-alive
-    if net.tm % 1 == 0 and net.state >= Const.IN_LOBBY then
-      prep.poke_server(net.conn_server)
-      -- prep.chat_lobby(net.conn_server, string.random(6)..os.time())
     end
 
   end
 end
 
 net.proc_farside = function(e)
-  if e.type == "receive" then
+  local is = kit.curry(eq)(e.type)
+
+  if is('receive') then
     play.recv(e)
-  elseif e.type == "connect" then
+  elseif is('connect') then
     print("Lua: farside connected, send greeting:", e.peer)
     prep.greeting(e.peer)
-  elseif e.type == "disconnect" then
+  elseif is('disconnect') then
     dump("Lua: disconnected to farside: "..tostring(e.peer))
     net.state = Const.OFFLINE
   else
@@ -296,9 +315,11 @@ net.proc_farside = function(e)
 end
 
 net.proc_server = function(e)
-  if e.type == "receive" then
+  local is = kit.curry(eq)(e.type)
+
+  if is('receive') then
     prep.recv(e)
-  elseif e.type == "connect" then
+  elseif is('connect') then
     print("Lua: server connected:", e.peer)
 
     C.on_connected('')
@@ -315,10 +336,9 @@ net.proc_server = function(e)
     if net.state == Const.CONN_TO_LOBBY then
       prep.send_iam(IP_LOCAL, PORT, e.peer)
     end
-
-  elseif e.type == "disconnect" then
+  elseif is('disconnect') then
     print("Lua: disconnected to server: ", e.peer)
-    net.state = Const.OFFLINE
+    net.gotoOffline()
     C.on_disconnected('')
   else
     dump(e)
