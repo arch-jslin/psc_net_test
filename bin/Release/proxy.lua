@@ -69,6 +69,11 @@ local function CLI_RT_LOB()
   local m = msg('CLI_RT_LOB')
   return m
 end
+local function CLI_RT_NPPL()
+  -- proxy responds server list to client
+  return msg('CLI_RT_NPPL')
+  -- return m
+end
 
 --
 -- recv functions
@@ -86,11 +91,13 @@ end
 --   -- dump('PS_POKE_R '..net.servers[key].name..' sta='..sta..' ppl='..num)
 -- end
 
-local function CLI_LS_LOB(m)
+local RECV = {}
+-- RECV.PS_POKE_R = PS_POKE_R
+RECV.CLI_LS_LOB = function (m)
   -- game client ask for a live server
   dump(m.T)
 
-  local res = CLI_RT_LOB()
+  local res =  CLI_RT_LOB() --msg('CLI_RT_LOB')
 
   res.servs = {}
 
@@ -102,16 +109,21 @@ local function CLI_LS_LOB(m)
 
   send(res, m.src)
 end
-
-local RECV = {}
--- RECV.PS_POKE_R = PS_POKE_R
-RECV.CLI_LS_LOB = CLI_LS_LOB
+RECV.CLI_NPPL = function (m)
+  -- game client ask for the number of players on proxy
+  dump(m.T)
+  local res =  CLI_RT_NPPL()
+  res.num = net.keepalive_cli.num()
+  print('num of ppl: ', res.num)
+  send(res, m.src)
+end
 
 local recv = require 'kit'.getRecv(function (m) RECV[m.T](m) end)
 
 net.tm = os.time()
 net.num_tick = 0
 net.servers = nil
+net.players = {}
 net.host = enet.host_create(self_ip..":"..self_port, 1024)
 
 net.keepalive = kit.helper.keepalive(15)
@@ -122,6 +134,18 @@ net.keepalive.bind('PS_POKE', RECV, function(m)
   net.servers[key].num_ppl = num
   net.servers[key].status = sta
 end)
+
+net.keepalive_cli = kit.helper.keepalive(30)
+net.keepalive_cli.bind('PS_POKE_CLI', RECV, function(m)
+
+end)
+
+net.poke_all_cli = function()
+  net.keepalive_cli.chk_zombie(nil, function(key)
+    net.keepalive_cli.send(net.players[key].conn)
+  end)
+end
+
 
 net.connect = function(ip, port)
   dump('connecting to... '..ip..':'..port)
@@ -145,7 +169,6 @@ end
 
 net.poke_all = function()
   net.keepalive.chk_zombie(nil, function(key)
-    -- send(PS_POKE(), net.servers[key].conn)
     net.keepalive.send(net.servers[key].conn)
   end)
 end
@@ -169,6 +192,7 @@ HAND.disconnect = function(e)
   print("Disconnect:", e.peer)
   local key = tostring(e.peer)
   net.keepalive.del(key)
+  net.keepalive_cli.del(key)
   return true
 end
 
@@ -179,9 +203,14 @@ HAND.connect = function(e)
   local key = tostring(e.peer)
   if net.servers[key] ~= nil then
     net.servers[key].status = 'green'
-    -- net.servers[key].tm = os.time()
     net.keepalive.poke(key)
     dump(net.servers)
+  else
+    dump('~~~~~~~~~~~~~~~~~~~~~', e.peer)
+    net.players[key] = {}
+    net.players[key].conn = e.peer
+    net.keepalive_cli.poke(key)    
+    -- net.keepalive_cli.send(net.players[key].conn)
   end
 
   return true
@@ -220,6 +249,7 @@ local function tick()
   -- every 10 secs
   if kindof(10000, net.num_tick) then
     net.poke_all()     -- keep-alive on servers
+    net.poke_all_cli()
   end
 
   -- every 60 secs
@@ -233,10 +263,8 @@ end
 -- main loop
 --
 if arg[1] == nil then
-
   print( "Start Proxy: "..self_ip )
   net.servers = read_conf()
-  -- dump(net.servers)
   net.connect_all()
 
   while true do
@@ -250,6 +278,5 @@ else
 
   assert(net.servers['173.255.254.41:54321'] ~= nil, 'Server address is missing in proxy.conf')
   assert(self_port == 10000                        , 'Default proxy port should be 10000')
-
 
 end

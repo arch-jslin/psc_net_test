@@ -6,12 +6,6 @@ local serpent = require 'serpent'
 
 local EXPORT  = {}
 
--- local function curry(f)
---   return function (x)
---     return function (y) return f(x,y) end
---   end
--- end
-
 -- reverse(...) : take some tuple and return a tuple of elements in reverse order
 -- e.g. "reverse(1,2,3)" returns 3,2,1
 local function reverse(...)
@@ -199,7 +193,7 @@ EXPORT.helper.keepalive = function(th)
     timetb[key] = os.time()
   end
 
-  local function _bind (name, tb, cb)
+  local function _bind(name, tb, cb)
     _name = name
     _recv = function(m)
       dump(m.T)
@@ -219,8 +213,10 @@ EXPORT.helper.keepalive = function(th)
   local function _chk_zombie(cbt, cbf)
     table.foreach(timetb, function(k,v)
       if os.time() - v > THRESHOLD then
+        print(_name, k, v, ' is zombie')
         if (cbt~=nil) then cbt(k) end -- is a zombie
       else
+        print(_name, k, v, ' is not zombie')
         if (cbf~=nil) then cbf(k) end -- not a zombie
       end
     end)

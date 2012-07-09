@@ -14,6 +14,17 @@ local game   = nil
 -- recv functions
 local RECV = {}
 
+RECV.CLI_RT_NPPL = function(m)  -- proxy
+  pmsg(m)
+  game.ppl_on_proxy = m.num     -- for later
+end
+
+RECV.PS_POKE_CLI = function(m)  -- proxy
+  pmsg(m)
+  local m = msg('PS_POKE_CLI_R')
+  kit.send(m, net.conn_proxy)
+end
+
 RECV.URE = function(m)
   dump(m.T..' '..m.pid)
 
@@ -168,6 +179,10 @@ local function list_lobbies(lserv)
   local m = msg('CLI_LS_LOB')
   kit.send(m, lserv)
 end
+local function num_ppl_proxy(pserv)
+  local m = msg('CLI_NPPL')
+  kit.send(m, pserv)
+end
 
 EXPORT.on = function(k,f) ON[k] = f end
 EXPORT.chat_lobby  = chat_lobby
@@ -175,9 +190,10 @@ EXPORT.poke_server = poke_server
 EXPORT.play_one = play_one
 EXPORT.send_iam = send_iam
 EXPORT.greeting = greeting
-EXPORT.recv  = recv
-EXPORT.list_players = list_players
-EXPORT.list_lobbies = list_lobbies
+EXPORT.recv     = recv
+EXPORT.list_players  = list_players
+EXPORT.list_lobbies  = list_lobbies
+EXPORT.num_ppl_proxy = num_ppl_proxy
 EXPORT.setup = function(n, g)
   net  = n
   game = g

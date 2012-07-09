@@ -42,8 +42,8 @@ local CLIENT = 2
 
 local net  = {}
 local game = {}
--- game.proxy_addr = {ip="192.168.1.209", port=10000}
-game.proxy_addr = {ip="173.255.254.41", port=10000}
+game.proxy_addr = {ip="192.168.1.209", port=10000}
+-- game.proxy_addr = {ip="173.255.254.41", port=10000}
 game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil ))
@@ -290,6 +290,11 @@ net.tick = function()
       prep.list_lobbies(net.conn_proxy)
     end
 
+    -- update number of players on proxy
+    if kindof(20, net.tm) then
+      prep.num_ppl_proxy(net.conn_proxy)
+    end
+
     -- request full player list every 10 mins
     if kindof(600, net.tm) and net.at(Const.IN_LOBBY) then
       play.list_players(net.conn_server)
@@ -359,7 +364,7 @@ function init(sc_flag)
     print('Lua: host:connect failed')
     return false
   end
-  print('Lua: host:connect succeed, but not yet acked.')
+  print('Lua: host:connect succeed, but not yet acked')
   return true
 end
 
@@ -382,12 +387,9 @@ function dtor()
 end
 
 
-if arg[1] == nil then
-
+if arg == nil or arg[1] == nil then
   dump( "Local IP: "..IP_LOCAL )
-
 else
-
   assert(Const.OFFLINE        == 0, 'Const.OFFLINE should be 0')
   assert(Const.CONN_TO_PROXY  == 1, 'Const.CONN_TO_PROXY should be 1')
   assert(Const.IN_PROXY       == 2, 'Const.IN_PROXY should be 2')
@@ -401,5 +403,4 @@ else
   assert(game.proxy_addr.port == 10000           , 'Proxy port should be 10000')
   assert(game.lobby_addr.ip   == '173.255.254.41', 'Lobby\'s default ip should be 173.255.254.41')
   assert(game.lobby_addr.port == 54321           , 'Lobby\'s default port should be 173.255.254.41')
-
 end
