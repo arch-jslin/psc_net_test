@@ -24,15 +24,15 @@ end
 
 -- internal function & data structure
 local function _player(peer)
-	local p = {}
+  local p = {}
 
   -- basic information
-	p.id = string.random(6, '%l%d')
-	p.status = Const.STATE.IDLE
+  p.id = string.random(6, '%l%d')
+  p.status = Const.STATE.IDLE
 
   -- server-side management
-	p.tm_poke = os.time()  -- last time been poked
-	p.tm_login = os.time() -- login time
+  p.tm_poke = os.time()  -- last time been poked
+  p.tm_login = os.time() -- login time
 
   -- networking
   p.peer = peer
@@ -42,12 +42,12 @@ local function _player(peer)
   p.disconnect = function()
     p.peer:disconnect()
   end
-	return p
+  return p
 end
 
 local function _room(c)
-	local r = {}
-	local players = {}
+  local r = {}
+  local players = {}
   local now  = os.time()
   local conn = c
   local num_players = 0
@@ -75,16 +75,16 @@ local function _room(c)
     players[pid] = p
     keepalive.poke(pid)
     return p
-	end
+  end
 
-	r.del = function(pid, reason)
+  r.del = function(pid, reason)
     players[pid].disconnect()
     players[pid] = nil
     keepalive.del(pid)
     if reason ~= nil then dump('delete '..pid..' Reason: '..reason) end
-	end
+  end
 
-	r.tell = function(sid, pid, txt, type)
+  r.tell = function(sid, pid, txt, type)
     dump('tell '..pid..' '..txt)
     local p = r.get(pid)
     if p == nil then return end
@@ -92,16 +92,16 @@ local function _room(c)
     local m = CHAT(sid, txt, type)
     dump(m)
     kit.send(m, p.peer)
-	end
+  end
 
-	r.bcast = function(sid, txt)
+  r.bcast = function(sid, txt)
     keepalive.poke(sid)
     table.foreach(players, function(k,v)
       if sid ~= k then
         r.tell(sid, k, txt, 'b')
       end
     end)
-	end
+  end
 
   r.all = function()
     return players
@@ -142,7 +142,7 @@ local function _room(c)
       now = os.time()
       r.tick_sec()
     end
-	end
+  end
 
   r.tick_sec = function()
     keepalive.chk_zombie(function(key)
@@ -156,7 +156,7 @@ local function _room(c)
     end
   end
 
-	return r
+  return r
 end
 
 local room = _room()

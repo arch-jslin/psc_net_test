@@ -42,9 +42,9 @@ local CLIENT = 2
 
 local net  = {}
 local game = {}
-game.proxy_addr = {ip="192.168.1.209", port=10000}
--- game.proxy_addr = {ip="173.255.254.41", port=10000}
--- game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
+-- game.proxy_addr = {ip="192.168.1.209", port=10000}
+game.proxy_addr = {ip="173.255.254.41", port=10000}
+game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil ))
   return ( game.ppl ~= nil )
@@ -171,6 +171,20 @@ net.server = function(ip, port)
   if not ok then dump(err) end
 
   return ok
+end
+
+net.waitGreeting = function()
+  dump('wait for greetings...'..tostring(net.greeting))
+  net.greeting = net.greeting + 1
+
+  if net.greeting >= 3 then
+    dump('wait too long...')
+    if game.hasPlayerList() and (not net.farside()) then
+      net.gotoGiveup()
+    else
+      net.gotoLobbyReady()
+    end
+  end
 end
 
 net.farside = function(info)
@@ -380,12 +394,11 @@ function run()
   end
   net.tick()
 end
---
+
 function dtor()
   net.reset()
   dump('event loop ended.')
 end
-
 
 if arg == nil or arg[1] == nil then
   dump( "Local IP: "..IP_LOCAL )
@@ -404,3 +417,4 @@ else
   assert(game.lobby_addr.ip   == '173.255.254.41', 'Lobby\'s default ip should be 173.255.254.41')
   assert(game.lobby_addr.port == 54321           , 'Lobby\'s default port should be 173.255.254.41')
 end
+
