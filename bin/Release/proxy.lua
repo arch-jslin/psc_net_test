@@ -206,7 +206,6 @@ HAND.connect = function(e)
     net.keepalive.poke(key)
     dump(net.servers)
   else
-    dump('~~~~~~~~~~~~~~~~~~~~~', e.peer)
     net.players[key] = {}
     net.players[key].conn = e.peer
     net.keepalive_cli.poke(key)    

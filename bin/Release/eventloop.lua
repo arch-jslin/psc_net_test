@@ -44,7 +44,7 @@ local net  = {}
 local game = {}
 game.proxy_addr = {ip="192.168.1.209", port=10000}
 -- game.proxy_addr = {ip="173.255.254.41", port=10000}
-game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
+-- game.lobby_addr = {ip="173.255.254.41", port=54321} -- default value
 game.hasPlayerList = function()
   dump('has player list? '..tostring( game.ppl ~= nil ))
   return ( game.ppl ~= nil )

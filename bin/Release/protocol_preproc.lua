@@ -15,12 +15,13 @@ local game   = nil
 local RECV = {}
 
 RECV.CLI_RT_NPPL = function(m)  -- proxy
+  m.src = tostring(m.src)       -- for debugging
   pmsg(m)
   game.ppl_on_proxy = m.num     -- for later
 end
 
 RECV.PS_POKE_CLI = function(m)  -- proxy
-  pmsg(m)
+  -- pmsg(m)
   local m = msg('PS_POKE_CLI_R')
   kit.send(m, net.conn_proxy)
 end
