@@ -196,7 +196,7 @@ EXPORT.helper.keepalive = function(th)
   local function _bind(name, tb, cb)
     _name = name
     _recv = function(m)
-      dump(m.T)
+      -- dump(m.T)
       cb(m)
       _poke(tostring(m.src))
     end
@@ -213,10 +213,10 @@ EXPORT.helper.keepalive = function(th)
   local function _chk_zombie(cbt, cbf)
     table.foreach(timetb, function(k,v)
       if os.time() - v > THRESHOLD then
-        print(_name, k, v, ' is zombie')
+        -- print(_name, k, v, ' is zombie')
         if (cbt~=nil) then cbt(k) end -- is a zombie
       else
-        print(_name, k, v, ' is not zombie')
+        -- print(_name, k, v, ' is not zombie')
         if (cbf~=nil) then cbf(k) end -- not a zombie
       end
     end)

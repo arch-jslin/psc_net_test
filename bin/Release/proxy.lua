@@ -148,7 +148,7 @@ end
 
 
 net.connect = function(ip, port)
-  dump('connecting to... '..ip..':'..port)
+  -- dump('connecting to... '..ip..':'..port)
   local conn = nil
   local function foo()
     conn = net.host:connect(ip..":"..port)
@@ -189,7 +189,7 @@ HAND.receive = function(e)
 end
 
 HAND.disconnect = function(e)
-  print("Disconnect:", e.peer)
+  -- print("Disconnect:", e.peer)
   local key = tostring(e.peer)
   net.keepalive.del(key)
   net.keepalive_cli.del(key)

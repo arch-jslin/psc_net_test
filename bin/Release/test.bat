@@ -1,6 +1,6 @@
 @setlocal
 @set port_start=2000
-@set port_range=10
+@set port_range=100
 
 @if "%1" neq "" @set port_start=%1
 @if "%2" neq "" @set port_range=%2
